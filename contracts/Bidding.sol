@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "./interface/IERC20.sol";
-import "./lib/SafeERC20.sol";
-import "./utlis/Pausable.sol";
-import "./lib/ECDSA.sol";
-import "./NFT721.sol";
-import "./lib/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // 招标合约
-contract bidding is AccessControl, Pausable, ReentrancyGuard {
+contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+
     bytes32 public constant PLATFORM = keccak256("PLATFORM");  // 平台
     bytes32 public constant ADMIN = keccak256("ADMIN");  // 管理员
+
     bool public saleIsActive;
-
     uint256  startTime;  //  开始时间  设置 minerStake
-
     uint256 public totalSold;
 
 
@@ -24,15 +26,14 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
     uint256 public stakeSharePrice;       // 质押股价
 
 
-    struct  userStakeInfo {
-        uint256 amount;                                    // 股数
-        bool unStake;                                    // 退回
+    struct userStakeInfo {
+        uint256 amount;                          // 股数
+        bool unStake;                            // 退回
         bool exist; // 存在
     }
 
-
     // 公司 质押
-    struct  companyStakeInfo {
+    struct companyStakeInfo {
         address addr;
         uint256 totalAmount;                            // 总数
         uint256 stakeAmount;                            // 质押数量
@@ -48,8 +49,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         insurance,
         operations
     }
-    mapping( companyType   => companyStakeInfo )  companyList;
-
+    mapping(companyType => companyStakeInfo)  companyList;
 
     //  Type
     enum  signType {
@@ -61,56 +61,41 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         unPlanStake
     }
 
-
-
-
-    mapping( address => userStakeInfo)     public user;          // 用户
-    mapping( address => userStakeInfo)     public miner;         // 矿工
-
+    mapping(address => userStakeInfo)     public user;          // 用户
+    mapping(address => userStakeInfo)     public miner;         // 矿工
 
     IERC20 public usdt;   // usdt
-
-
 
     bool  public  isfDdFee;  //  是否缴纳尽调费
     bool  isPayService; // 是否 缴纳
 
-
-    address public platformAddr;           //平台管理
+    address public platformAddr;   //平台管理
+    //TODO
     address public platformFeeAddr;        //平台管理费地址
     address public founderAddr;            // 创始人
     address public DDAddr;                 // 尽调地址
 
-
-
     // fee
-    uint256 public serviceFee = 10000 ;   //  服务费 10000
+    uint256 public serviceFee = 10000;   //  服务费 10000
     uint256 constant  ddFee = 90000;  //    尽调费 90000  首次
 
-
     bool  public isInIt;
-
-
-
 
     uint256  subscribeTime;       // 认购时间
     uint256  subscribeLimitTime;  // 限时
     uint256  minerStakeLimitTime;  // 矿工质押限时
     uint256  companyStakeLimitTime;   // 限时
 
-
     //  创始人质押
-    event payServiceFeeLog(address addr, address to, uint256 amount, uint256 fee,uint256 time);
+    event payServiceFeeLog(address addr, address to, uint256 amount, uint256 fee, uint256 time);
 
-
-
-    event payDDFeeLog( address account,uint256 amount, uint256 time);
-    event unMinerStakeLog( address account,uint256 amount, uint256 time);
+    event payDDFeeLog(address account, uint256 amount, uint256 time);
+    event unMinerStakeLog(address account, uint256 amount, uint256 time);
 
     event uploadProjectLog(address addr, uint256 id, uint256 time);
     event minerStakeLog(address addr, uint256 id, uint256 time);
-    event subscribeLog(address addr,uint256  stock, uint256 amount, uint256 time);
-    event payServiceFeeLog(address founderAddr,address  platformFeeAddr, uint256 amount, uint256 time);
+    event subscribeLog(address addr, uint256 stock, uint256 amount, uint256 time);
+    event payServiceFeeLog(address founderAddr, address platformFeeAddr, uint256 amount, uint256 time);
 
 
     constructor(
@@ -130,7 +115,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         saleIsActive = false;
 
         DDAddr = ddAddr_;       //矿场提供方
-        platformAddr =  _msgSender();    // 平台管理
+        platformAddr = _msgSender();    // 平台管理
         founderAddr = founderAddr_;   //创始人
         serviceFee = service_;   //  服务费
 
@@ -139,48 +124,42 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
     }
 
-
-
-
     //  缴纳服务费
     function payServiceFee() public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(_msgSender() ==  founderAddr, "user does not have permission"); // 创始人 PayServiceFee
+        require(_msgSender() == founderAddr, "user does not have permission"); // 创始人 PayServiceFee
         require(isPayService == false, "user does not have permission"); // 创始人
         isPayService = true;
         usdt.safeTransferFrom(_msgSender(), platformFeeAddr, serviceFee);  // 缴给
         emit payServiceFeeLog(founderAddr, platformFeeAddr, serviceFee, block.timestamp);
     }
 
-
     //  缴纳尽调费
     function payDDFee() public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(_msgSender() ==  founderAddr, "user does not have permission"); // 创始人
+        require(_msgSender() == founderAddr, "user does not have permission"); // 创始人
         require(isfDdFee == false, "user does not have permission"); // 创始人
         isfDdFee = true;
         usdt.safeTransferFrom(_msgSender(), address(this), ddFee);  // 缴给
-        emit payDDFeeLog(founderAddr,  ddFee, block.timestamp);
+        emit payDDFeeLog(founderAddr, ddFee, block.timestamp);
     }
 
-
     // 退回尽调费
-    function refundDDFee() public  onlyRole(ADMIN) {
+    function refundDDFee() public onlyRole(ADMIN) {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(_msgSender() == founderAddr, "user does not have permission"); // 创始人
         require(isfDdFee == true, "user does not have permission"); // 创始人
         isfDdFee = false;
 
         usdt.safeTransfer(_msgSender(), ddFee);  // 缴给
-        emit payDDFeeLog(founderAddr,  ddFee, block.timestamp);
+        emit payDDFeeLog(founderAddr, ddFee, block.timestamp);
     }
 
-
     // 矿工质押
-    function minerStake( uint256 amount,  uint256 expire , bytes memory signature) public   {
+    function minerStake(uint256 amount, uint256 expire, bytes memory signature) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(expire  > block.timestamp, "not yet expired"); // 还没到期
-        require( miner[_msgSender()].exist == true, "participated"); // 参与过了
+        require(expire > block.timestamp, "not yet expired"); // 还没到期
+        require(miner[_msgSender()].exist == true, "participated"); // 参与过了
 
         bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(), amount, expire));
         _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
@@ -191,43 +170,41 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         emit minerStakeLog(_msgSender(), amount, block.timestamp);
     }
 
-
     //    退款矿工质押
-    function unMinerStake( uint256 expire , bytes memory signature) public   {
+    function unMinerStake(uint256 expire, bytes memory signature) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require( miner[_msgSender()].exist == true, "miner  does not exist"); //   用户不存在
-        require(expire  > block.timestamp, "not yet expired"); // 还没到期
-        require( miner[_msgSender()].unStake == false, "miner  does not exist"); //
+        require(miner[_msgSender()].exist == true, "miner  does not exist"); //   用户不存在
+        require(expire > block.timestamp, "not yet expired"); // 还没到期
+        require(miner[_msgSender()].unStake == false, "miner  does not exist"); //
 
-        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender() ,signType.unMinerStake, expire));
+        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(), signType.unMinerStake, expire));
         _checkRole(ADMIN, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
 
         miner[_msgSender()].unStake = true;
-        usdt.safeTransfer(_msgSender(),  miner[_msgSender()].amount);
+        usdt.safeTransfer(_msgSender(), miner[_msgSender()].amount);
         emit unMinerStakeLog(_msgSender(), miner[_msgSender()].amount, block.timestamp);
     }
 
-
     // 开启认购
-    function startSubscribe(uint256  financingShare_, uint256 stakeSharePrice_, uint256  subscribeTime_, uint256 subscribeLimitTime_) public onlyRole(PLATFORM)  {
-        require(financingShare  > 0, "financingShare cannot be zero");   //  不能为零
-        require(stakeSharePrice_  > 0, "subscribeLimitTime_ cannot be zero");   //  未开启
-        require(subscribeTime_  > 0, "subscribeTime_ cannot be zero");   //  不能为零
-        require(subscribeLimitTime_  > 0, "subscribeLimitTime_ cannot be zero");   //  未开启
+    function startSubscribe(uint256 financingShare_, uint256 stakeSharePrice_, uint256 subscribeTime_, uint256 subscribeLimitTime_) public onlyRole(PLATFORM) {
+        require(financingShare > 0, "financingShare cannot be zero");   //  不能为零
+        require(stakeSharePrice_ > 0, "subscribeLimitTime_ cannot be zero");   //  未开启
+        require(subscribeTime_ > 0, "subscribeTime_ cannot be zero");   //  不能为零
+        require(subscribeLimitTime_ > 0, "subscribeLimitTime_ cannot be zero");   //  未开启
 
 
         financingShare = financingShare_;        // 融资融资股
         stakeSharePrice = stakeSharePrice_;
         subscribeTime = subscribeTime_;
-        subscribeLimitTime =subscribeLimitTime_;
+        subscribeLimitTime = subscribeLimitTime_;
     }
 
     // 认购
     function subscribe(uint256 stock) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require( stock > 0 , "cannot be less than zero");
-        require(financingShare * 2  > totalSold, "sold out");   // 售完
-        require(subscribeTime  > 0, "UnStart subscribe");   //  未开启
+        require(stock > 0, "cannot be less than zero");
+        require(financingShare * 2 > totalSold, "sold out");   // 售完
+        require(subscribeTime > 0, "UnStart subscribe");   //  未开启
 
         require(subscribeTime + subscribeLimitTime > block.timestamp, "time expired");
         require(stock > 0, "Not yet subscribed"); // 数量 大于0
@@ -240,61 +217,58 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         user[_msgSender()].amount += stock;
         user[_msgSender()].exist = true;
 
-        emit subscribeLog(_msgSender(), stock, stock * stakeSharePrice , block.timestamp);
+        emit subscribeLog(_msgSender(), stock, stock * stakeSharePrice, block.timestamp);
     }
 
-    //    退款用户质押
-    function unSubscribe( uint256 expire , bytes memory signature) public   {
+    // 退款用户质押
+    function unSubscribe(uint256 expire, bytes memory signature) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require( user[_msgSender()].exist == true, "company  does not exist"); //   用户不存在
-        require( user[_msgSender()].unStake == false, "company  does not exist"); //
+        require(user[_msgSender()].exist == true, "company  does not exist"); //   用户不存在
+        require(user[_msgSender()].unStake == false, "company  does not exist"); //
 
-        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender() , signType.unSubscribe, expire));
+        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(), signType.unSubscribe, expire));
         _checkRole(ADMIN, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
 
         user[_msgSender()].unStake = true;
-        usdt.safeTransfer(_msgSender(),  user[_msgSender()].amount);
+        usdt.safeTransfer(_msgSender(), user[_msgSender()].amount);
         emit minerStakeLog(_msgSender(), user[_msgSender()].amount, block.timestamp);
     }
 
-
     // 方案质押
-    function planStake(companyType role,address companyAddr, uint256 totalAmount, uint256 stakeAmount, uint256 expire , bytes memory signature) public   {
+    function planStake(companyType role, address companyAddr, uint256 totalAmount, uint256 stakeAmount, uint256 expire, bytes memory signature) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(_msgSender() == companyAddr, "must be submitted by yourself");  // 必须是自己提交
         require(expire + companyStakeLimitTime > block.timestamp, "not yet expired"); // 还没到期
-        require( companyList[role].exist == false, "participated"); // 参与过了
+        require(companyList[role].exist == false, "participated"); // 参与过了
 
-        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender() ,signType.planStake, role, totalAmount,stakeAmount, expire));
+        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(), signType.planStake, role, totalAmount, stakeAmount, expire));
         _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
 
         companyList[role].totalAmount = totalAmount;
         companyList[role].stakeAmount = stakeAmount;
         companyList[role].exist = true;
-        companyList[role].addr = _msgSender() ;
+        companyList[role].addr = _msgSender();
         usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount);
         emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
     }
 
-
     //    退款矿工质押
-    function unPlanStake(companyType role, uint256 expire , bytes memory signature) public   {
+    function unPlanStake(companyType role, uint256 expire, bytes memory signature) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require( companyList[role].exist == true, "company  does not exist"); //   用户不存在
-        require( companyList[role].unStake == false, "company  does not exist"); //
+        require(companyList[role].exist == true, "company  does not exist"); //   用户不存在
+        require(companyList[role].unStake == false, "company  does not exist"); //
 
-        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender() ,signType.unPlanStake, role, expire));
+        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(), signType.unPlanStake, role, expire));
         _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
 
         companyList[role].unStake = true;
-        usdt.safeTransfer(_msgSender(),  companyList[role].stakeAmount);
+        usdt.safeTransfer(_msgSender(), companyList[role].stakeAmount);
         emit minerStakeLog(_msgSender(), companyList[role].stakeAmount, block.timestamp);
     }
 
-
     // 查看认缴金额
 
-    function viewSubscribe(address  account ) public view returns( uint256 ) {
+    function viewSubscribe(address account) public view returns (uint256) {
         return user[account].amount;
     }
 
@@ -312,8 +286,8 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 紧急提现
-    function withdraw(uint256 amount, address addr ) public onlyOwner {
-        usdt.safeTransfer( addr,  amount);
+    function withdraw(uint256 amount, address addr) public onlyOwner {
+        usdt.safeTransfer(addr, amount);
     }
 }
 

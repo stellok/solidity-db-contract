@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./lib/SafeERC20.sol";
-import "./lib/Strings.sol";
-import "./utlis/Pausable.sol";
-import "./utlis/Ownable.sol";
-import "./interface/IERC20.sol";
-import "./interface/IERC1155.sol";
-import "./interface/IERC1155Receiver.sol";
-import "./interface/IERC1155MetadataURI.sol";
-import "./lib/Address.sol";
-import "./lib/Context.sol";
-import "./lib/ERC165.sol";
-import "./lib/ReentrancyGuard.sol";
+
+import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 
 contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC1155MetadataURI {
@@ -33,8 +32,8 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
     using SafeERC20 for IERC20;
     uint256  constant public feePointBase = 1000;
 
-    event sellLog (address from_,  uint256 tokenId_, uint256 price_, uint256 time_);
-    event buyLog (address from_, address to_,  uint256 tokenId_, uint256  amount_, uint256 price_);
+    event sellLog (address from_, uint256 tokenId_, uint256 price_, uint256 time_);
+    event buyLog (address from_, address to_, uint256 tokenId_, uint256 amount_, uint256 price_);
     event cancelOrderLog (address account_, uint256 tokenId_);
 
     struct order {
@@ -43,12 +42,11 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
     }
 
     //    mapping(uint256 => order) public orders;
-    mapping(uint256 => mapping( address => order )) public orders;
-    mapping( uint256 => bool ) public   disuseNFT;// 废弃
-
+    mapping(uint256 => mapping(address => order)) public orders;
+    mapping(uint256 => bool) public   disuseNFT;// 废弃
 
     //https://game.example/api/item/{id}.json
-    constructor(string memory uri_, IERC20 usdtContract_, address  owner_, uint256 feePoint_,address feeAddress_  )  {
+    constructor(string memory uri_, IERC20 usdtContract_, address owner_, uint256 feePoint_, address feeAddress_)  {
         usdt = usdtContract_;
         feeAddress = feeAddress_;
         feePoint = feePoint_;
@@ -59,10 +57,9 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
 
     event deleteTokenId(uint256 tokenId_);
 
-    function mint(address  account_,uint256 tokenId, uint256  amount_) public onlyOwner {
+    function mint(address account_, uint256 tokenId, uint256 amount_) public onlyOwner {
         _mint(account_, tokenId, amount_, "");
     }
-
 
 
     function burn(
@@ -74,14 +71,13 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
 
     function disuse(
         uint256 id_
-    ) public onlyOwner  {
+    ) public onlyOwner {
         disuseNFT[id_] = true;
-        emit deleteTokenId(id_) ;
+        emit deleteTokenId(id_);
     }
 
 
-
-    function sell(uint256 tokenId_, uint256 amount_, uint256 price_) public  nonReentrant {
+    function sell(uint256 tokenId_, uint256 amount_, uint256 price_) public nonReentrant {
         require(balanceOf(_msgSender(), tokenId_) >= amount_, "NFT not the owner");
         require(price_ > 0, "price not zero");
         require(amount_ > 0, "price not zero");
@@ -90,38 +86,38 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
         emit sellLog(_msgSender(), tokenId_, price_, block.timestamp);
     }
 
-    function cancelOrder( uint256 tokenId_) public  nonReentrant {
+    function cancelOrder(uint256 tokenId_) public nonReentrant {
         require(orders[tokenId_][_msgSender()].amount > 0, "order does not exist");
         delete orders[tokenId_][_msgSender()];
         emit cancelOrderLog(_msgSender(), tokenId_);
     }
 
-    function buy( uint256 tokenId_,address sellAddr_,uint256 amount_,  uint256 price_) public  nonReentrant {
+    function buy(uint256 tokenId_, address sellAddr_, uint256 amount_, uint256 price_) public nonReentrant {
         require(orders[tokenId_][sellAddr_].amount > 0, "order does not exist");
         require(orders[tokenId_][sellAddr_].price == price_, "price  invalid");  // 防止卖家修改价格
 
-        require(amount_ <= orders[tokenId_][sellAddr_ ].amount, "not enough quantity");
+        require(amount_ <= orders[tokenId_][sellAddr_].amount, "not enough quantity");
         orders[tokenId_][sellAddr_].amount -= amount_;
         if (feeAddress != address(0) && feePoint != 0) {
             uint256 txfee = amount_ * price_ * feePoint / feePointBase;
             usdt.safeTransferFrom(_msgSender(), feeAddress, txfee);
-            usdt.safeTransferFrom(_msgSender(), sellAddr_, amount_ * orders[tokenId_][sellAddr_ ].price - txfee);
+            usdt.safeTransferFrom(_msgSender(), sellAddr_, amount_ * orders[tokenId_][sellAddr_].price - txfee);
         } else {
-            usdt.safeTransferFrom(_msgSender(), sellAddr_, orders[tokenId_][sellAddr_ ].price * amount_ );
+            usdt.safeTransferFrom(_msgSender(), sellAddr_, orders[tokenId_][sellAddr_].price * amount_);
         }
 
-        if (orders[tokenId_][sellAddr_ ].amount <= 0) {
+        if (orders[tokenId_][sellAddr_].amount <= 0) {
             delete orders[tokenId_][sellAddr_];
         }
         // transferFrom(sellAddr_, _msgSender(), tokenId_);
-        emit buyLog(sellAddr_, _msgSender(), tokenId_, amount_, orders[tokenId_][sellAddr_ ].price );
+        emit buyLog(sellAddr_, _msgSender(), tokenId_, amount_, orders[tokenId_][sellAddr_].price);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
         return
-        interfaceId == type(IERC1155).interfaceId ||
-        interfaceId == type(IERC1155MetadataURI).interfaceId ||
-        super.supportsInterface(interfaceId);
+            interfaceId == type(IERC1155).interfaceId ||
+            interfaceId == type(IERC1155MetadataURI).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     function uri(uint256) public view virtual override returns (string memory) {
@@ -207,12 +203,12 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
 
         uint256 fromBalance = _balances[id][from];
         require(fromBalance >= amount, "ERC1155: insufficient balance for transfer");
-    unchecked {
-        _balances[id][from] = fromBalance - amount;
-    }
+        unchecked {
+            _balances[id][from] = fromBalance - amount;
+        }
         _balances[id][to] += amount;
 
-        if (_balances[id][from]  < orders[id][from].amount || _balances[id][from] == 0 ){
+        if (_balances[id][from] < orders[id][from].amount || _balances[id][from] == 0) {
             delete orders[id][from];
         }
         emit TransferSingle(operator, from, to, id, amount);
@@ -242,9 +238,9 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
 
             uint256 fromBalance = _balances[id][from];
             require(fromBalance >= amount, "ERC1155: insufficient balance for transfer");
-        unchecked {
-            _balances[id][from] = fromBalance - amount;
-        }
+            unchecked {
+                _balances[id][from] = fromBalance - amount;
+            }
             _balances[id][to] += amount;
         }
 
@@ -297,9 +293,9 @@ contract ERC1155 is Context, ERC165, IERC1155, Ownable, ReentrancyGuard, IERC115
 
         uint256 fromBalance = _balances[id][from];
         require(fromBalance >= amount, "ERC1155: burn amount exceeds balance");
-    unchecked {
-        _balances[id][from] = fromBalance - amount;
-    }
+        unchecked {
+            _balances[id][from] = fromBalance - amount;
+        }
 
         emit TransferSingle(operator, from, address(0), id, amount);
 
