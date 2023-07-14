@@ -286,6 +286,9 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     }
 
     // 公售
+    //TODO check 30%
+    //TODO
+    // @param amount_股数
     function publicSale(uint256 amount_) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.publicSale, "not PAID status");

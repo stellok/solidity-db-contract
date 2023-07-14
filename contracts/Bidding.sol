@@ -134,6 +134,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         emit payServiceFeeLog(founderAddr, platformFeeAddr, serviceFee, block.timestamp);
     }
 
+    //TODO platformFeeAddr
     //  缴纳尽调费
     function payDDFee() public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
@@ -199,8 +200,10 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         subscribeLimitTime = subscribeLimitTime_;
     }
 
-    // 认购
-    function subscribe(uint256 stock) public {
+    //TODO 少了USDT
+    // @param stock 认购数
+    // @param amount 5% stake
+    function subscribe(uint256 stock,uint256 amount) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(stock > 0, "cannot be less than zero");
         require(financingShare * 2 > totalSold, "sold out");   // 售完
@@ -209,6 +212,8 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         require(subscribeTime + subscribeLimitTime > block.timestamp, "time expired");
         require(stock > 0, "Not yet subscribed"); // 数量 大于0
 
+        //TODO changed
+        usdt.safeTransferFrom(_msgSender(),address(this),amount);
 
         if (financingShare - totalSold < stock) {
             stock = financingShare - totalSold;
