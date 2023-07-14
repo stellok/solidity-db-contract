@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "./interface/IERC20.sol";
-import "./lib/SafeERC20.sol";
-import "./utlis/Pausable.sol";
-import "./lib/ECDSA.sol";
-import "./NFT721.sol";
-import "./lib/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // 招标合约
-contract bidding is AccessControl, Pausable, ReentrancyGuard {
+contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+
     bytes32 public constant PLATFORM = keccak256("PLATFORM");  // 平台
     bytes32 public constant ADMIN = keccak256("ADMIN");  // 管理员
+
     bool public saleIsActive;
-
     uint256  startTime;  //  开始时间  设置 minerStake
-
     uint256 public totalSold;
 
 
@@ -92,7 +94,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
 
     uint256 public serviceFee  ;   //  服务费 10000
-    uint256 constant  ddFee;  //    尽调费 90000  首次
+    uint256 public ddFee;  //    尽调费 90000  首次
 
 
     bool  public isInIt;
@@ -129,8 +131,6 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 service_,
         uint256 ddFee_,
         address ddAddr_
-
-
     ) {
         grantRole(PLATFORM, _msgSender());
         grantRole(ADMIN, adminAddr_);
@@ -232,7 +232,9 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         subscribeLimitTime =subscribeLimitTime_;
     }
 
-    // 认购
+    //TODO 少了USDT
+    // @param stock 认购数
+    // @param amount 5% stake
     function subscribe(uint256 stock) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require( stock > 0 , "cannot be less than zero");
@@ -241,7 +243,6 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
         require(subscribeTime + subscribeLimitTime > block.timestamp, "time expired");
         require(stock > 0, "Not yet subscribed"); // 数量 大于0
-
 
         if (financingShare * 2 - totalSold < stock) {
             stock = financingShare * 2  - totalSold;
@@ -335,6 +336,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
 
     // 查看认缴金额
+
     function viewSubscribe(address  account ) public view returns( uint256 ) {
         return user[account].amount;
     }
@@ -353,8 +355,8 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 紧急提现
-    function withdraw(uint256 amount, address addr ) public onlyOwner {
-        usdt.safeTransfer( addr,  amount);
+    function withdraw(uint256 amount, address addr) public onlyOwner {
+        usdt.safeTransfer(addr, amount);
     }
 }
 

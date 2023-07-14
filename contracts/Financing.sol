@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./interface/IERC20.sol";
-import "./interface/IERC1155S.sol";
-import "./lib/SafeERC20.sol";
-import "./utlis/Pausable.sol";
-import "./utlis/AccessControl.sol";
-import "./lib/ReentrancyGuard.sol";
-
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "./lib/IERC1155S.sol";
 
 //interface IBidding { tender.sol
 interface IBidding {
@@ -18,7 +19,7 @@ interface IBidding {
 
 
 // 股权融资
-contract financing is AccessControl, Pausable, ReentrancyGuard {
+contract financing is AccessControl,Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -168,7 +169,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
         uint256[] memory feeList_,  // fees
         address[] memory addrList_, // address  集合
         uint256[] memory limitTimeList_,  // times  集合
-        uint256[] memory shareList_       // Share  集合
+        uint256[] memory shareList_  // Share  集合
 
     ){
 
@@ -296,6 +297,9 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 公售
+    //TODO check 30%
+    //TODO
+    // @param amount_股数
     function publicSale(uint256 amount_) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.publicSale, "not PAID status");
@@ -428,9 +432,8 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
         if (issuedTotalShare <   shareList[shareType.financingShare]) {
             bargainTime = block.timestamp;
             schedule  = ActionChoices.Bargain;
-            NFT.tokenIdBurn(receiptToken);
-
-//            NFT.burn(_msgSender(), shareToken, balance);
+            //TODO
+            //NFT.tokenIdBurn(receiptToken);
             emit whetherFinishLog(false, block.timestamp);
         } else {
             _whetherFinish();
@@ -491,7 +494,6 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
         // 查看nft 资产
         uint256 balance = NFT.balanceOf(_msgSender(), shareToken);
         require(balance > 0, "Insufficient balance");
-
         // 查看余额
         // 铸造nft
         NFT.burn(_msgSender(), shareToken, balance);
@@ -511,6 +513,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
 
         usdt.safeTransfer(addrList[addrType.builderAddr] ,  feeList[feeType.remainBuildFee]);
         usdt.safeTransfer(platformFeeAddr,  feeList[feeType.publicSalePlatformFee]);
+
 
         isClaimRemainBuild = true;
         operationStartTime = block.timestamp;
