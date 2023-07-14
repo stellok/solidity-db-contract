@@ -11,7 +11,6 @@ import "./lib/ReentrancyGuard.sol";
 
 //interface IBidding { tender.sol
 interface IBidding {
-
     //  查看用户状态            // 返回 数量, 状态,
     function viewSubscribe(address) external view returns (uint256);
 }
@@ -34,6 +33,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
 
     // 电力质押时间
     bool public electrStakeLock;
+    bool public claimRemainBuildFee;   // 是否
 
     enum ActionChoices {
         INIT,
@@ -155,6 +155,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
     event insuranceReceiveLog(address energyAddr_, uint256 amount_,  uint256 time_);
     event whetherFirstPaymentFinishLog( bool,  uint256 time_);  // 是否     完成
     event whetherFinishLog( bool,  uint256 time_);  // 是否 完成
+
 
 
 
@@ -428,6 +429,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
             bargainTime = block.timestamp;
             schedule  = ActionChoices.Bargain;
             NFT.tokenIdBurn(receiptToken);
+//            NFT.burn(_msgSender(), shareToken, balance);
             emit whetherFinishLog(false, block.timestamp);
         } else {
             _whetherFinish();
@@ -502,11 +504,14 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
     function claimRemainBuildFee() public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(_msgSender() == addrList[addrType.builderAddr], "permission denied");
-        require(schedule == ActionChoices.FINISH, "not PAID status");
+        require(schedule == ActionChoices.FINISH, "not FINISH status");
+        require(isClaimRemainBuild == false, "Can not receive repeatedly"");  //  不能能重复领取
 
         usdt.safeTransfer(addrList[addrType.builderAddr] ,  feeList[feeType.remainBuildFee]);
-        usdt.safeTransfer(platformFeeAddr,  feeList[feeType.remainPlatformFee]);
+        usdt.safeTransfer(platformFeeAddr,  feeList[feeType.publicSalePlatformFee]);
 
+
+        isClaimRemainBuild = true;
         operationStartTime = block.timestamp;
         electrStartTime = block.timestamp;
         emit claimRemainBuildFeeLog(addrList[addrType.builderAddr] , feeList[feeType.remainBuildFee], block.timestamp);

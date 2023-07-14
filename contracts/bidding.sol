@@ -84,8 +84,8 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
 
     // fee
-    uint256 public serviceFee = 10000 ;   //  服务费 10000
-    uint256 constant  ddFee = 90000;  //    尽调费 90000  首次
+    uint256 public serviceFee  ;   //  服务费 10000
+    uint256 constant  ddFee;  //    尽调费 90000  首次
 
 
     bool  public isInIt;
@@ -119,6 +119,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         address founderAddr_,
         address adminAddr_,//  owner
         uint256 service_,
+        uint256 ddFee_,
         address ddAddr_
 
 
@@ -129,6 +130,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         _transferOwnership(owner_);
         saleIsActive = false;
 
+        ddFee = ddFee_;       //  尽调费
         DDAddr = ddAddr_;       //矿场提供方
         platformAddr =  _msgSender();    // 平台管理
         founderAddr = founderAddr_;   //创始人
@@ -180,9 +182,9 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
     function minerStake( uint256 amount,  uint256 expire , bytes memory signature) public   {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(expire  > block.timestamp, "not yet expired"); // 还没到期
-        require( miner[_msgSender()].exist == true, "participated"); // 参与过了
+        require( miner[_msgSender()].exist == false, "participated"); // 参与过了
 
-        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(), amount, expire));
+        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(),signType.minerStake, amount, expire));
         _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
 
         usdt.safeTransferFrom(_msgSender(), address(this), amount);
@@ -233,8 +235,8 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         require(stock > 0, "Not yet subscribed"); // 数量 大于0
 
 
-        if (financingShare - totalSold < stock) {
-            stock = financingShare - totalSold;
+        if (financingShare * 2 - totalSold < stock) {
+            stock = financingShare * 2  - totalSold;
         }
         totalSold += stock;
         user[_msgSender()].amount += stock;
@@ -243,14 +245,14 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         emit subscribeLog(_msgSender(), stock, stock * stakeSharePrice , block.timestamp);
     }
 
-    //    退款用户质押
+    //    退款用户认缴
     function unSubscribe( uint256 expire , bytes memory signature) public   {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require( user[_msgSender()].exist == true, "company  does not exist"); //   用户不存在
         require( user[_msgSender()].unStake == false, "company  does not exist"); //
 
         bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender() , signType.unSubscribe, expire));
-        _checkRole(ADMIN, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
+        _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
 
         user[_msgSender()].unStake = true;
         usdt.safeTransfer(_msgSender(),  user[_msgSender()].amount);
@@ -293,7 +295,6 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
 
     // 查看认缴金额
-
     function viewSubscribe(address  account ) public view returns( uint256 ) {
         return user[account].amount;
     }
