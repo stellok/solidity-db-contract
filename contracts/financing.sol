@@ -33,7 +33,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
 
     // 电力质押时间
     bool public electrStakeLock;
-    bool public claimRemainBuildFee;   // 是否
+    bool public isClaimRemainBuild;   // 是否
 
     enum ActionChoices {
         INIT,
@@ -168,7 +168,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
         uint256[] memory feeList_,  // fees
         address[] memory addrList_, // address  集合
         uint256[] memory limitTimeList_,  // times  集合
-        uint256[] memory shareList_  // Share  集合
+        uint256[] memory shareList_       // Share  集合
 
     ){
 
@@ -429,6 +429,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
             bargainTime = block.timestamp;
             schedule  = ActionChoices.Bargain;
             NFT.tokenIdBurn(receiptToken);
+
 //            NFT.burn(_msgSender(), shareToken, balance);
             emit whetherFinishLog(false, block.timestamp);
         } else {
@@ -490,6 +491,7 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
         // 查看nft 资产
         uint256 balance = NFT.balanceOf(_msgSender(), shareToken);
         require(balance > 0, "Insufficient balance");
+
         // 查看余额
         // 铸造nft
         NFT.burn(_msgSender(), shareToken, balance);
@@ -505,11 +507,10 @@ contract financing is AccessControl, Pausable, ReentrancyGuard {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(_msgSender() == addrList[addrType.builderAddr], "permission denied");
         require(schedule == ActionChoices.FINISH, "not FINISH status");
-        require(isClaimRemainBuild == false, "Can not receive repeatedly"");  //  不能能重复领取
+        require(isClaimRemainBuild == false, "Can not receive repeatedly");  //  不能能重复领取
 
         usdt.safeTransfer(addrList[addrType.builderAddr] ,  feeList[feeType.remainBuildFee]);
         usdt.safeTransfer(platformFeeAddr,  feeList[feeType.publicSalePlatformFee]);
-
 
         isClaimRemainBuild = true;
         operationStartTime = block.timestamp;

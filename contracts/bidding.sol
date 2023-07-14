@@ -31,6 +31,15 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
 
+    struct  minerStakeInfo {
+        uint256 amount;                                  // 股数
+        uint256 stakeAmount;                              // 退回
+        bool unIntentMoney;                              // 退回
+        bool unStake;                                    // 退回
+        bool exist; // 存在
+    }
+
+
     // 公司 质押
     struct  companyStakeInfo {
         address addr;
@@ -65,7 +74,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
 
     mapping( address => userStakeInfo)     public user;          // 用户
-    mapping( address => userStakeInfo)     public miner;         // 矿工
+    mapping( address => minerStakeInfo)     public miner;         // 矿工
 
 
     IERC20 public usdt;   // usdt
@@ -82,8 +91,6 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
     address public DDAddr;                 // 尽调地址
 
 
-
-    // fee
     uint256 public serviceFee  ;   //  服务费 10000
     uint256 constant  ddFee;  //    尽调费 90000  首次
 
@@ -108,6 +115,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
     event unMinerStakeLog( address account,uint256 amount, uint256 time);
 
     event uploadProjectLog(address addr, uint256 id, uint256 time);
+    event minerIntentMoneyLog(address addr, uint256 id, uint256 time);
     event minerStakeLog(address addr, uint256 id, uint256 time);
     event subscribeLog(address addr,uint256  stock, uint256 amount, uint256 time);
     event payServiceFeeLog(address founderAddr,address  platformFeeAddr, uint256 amount, uint256 time);
@@ -179,7 +187,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
 
     // 矿工质押
-    function minerStake( uint256 amount,  uint256 expire , bytes memory signature) public   {
+    function minerIntentMoney( uint256 amount,  uint256 expire , bytes memory signature) public   {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(expire  > block.timestamp, "not yet expired"); // 还没到期
         require( miner[_msgSender()].exist == false, "participated"); // 参与过了
@@ -190,21 +198,21 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         usdt.safeTransferFrom(_msgSender(), address(this), amount);
         miner[_msgSender()].amount += amount;
         miner[_msgSender()].exist = true;
-        emit minerStakeLog(_msgSender(), amount, block.timestamp);
+        emit minerIntentMoneyLog(_msgSender(), amount, block.timestamp);
     }
 
 
     //    退款矿工质押
-    function unMinerStake( uint256 expire , bytes memory signature) public   {
+    function unMinerIntentMoney( uint256 expire , bytes memory signature) public   {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require( miner[_msgSender()].exist == true, "miner  does not exist"); //   用户不存在
         require(expire  > block.timestamp, "not yet expired"); // 还没到期
-        require( miner[_msgSender()].unStake == false, "miner  does not exist"); //
+        require( miner[_msgSender()].unIntentMoney == false, "miner  does not exist"); //
 
         bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender() ,signType.unMinerStake, expire));
         _checkRole(ADMIN, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
 
-        miner[_msgSender()].unStake = true;
+        miner[_msgSender()].unIntentMoney = true;
         usdt.safeTransfer(_msgSender(),  miner[_msgSender()].amount);
         emit unMinerStakeLog(_msgSender(), miner[_msgSender()].amount, block.timestamp);
     }
@@ -241,7 +249,7 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         totalSold += stock;
         user[_msgSender()].amount += stock;
         user[_msgSender()].exist = true;
-
+        usdt.safeTransferFrom(_msgSender(), address(this), stock * stakeSharePric);
         emit subscribeLog(_msgSender(), stock, stock * stakeSharePrice , block.timestamp);
     }
 
@@ -257,6 +265,25 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
         user[_msgSender()].unStake = true;
         usdt.safeTransfer(_msgSender(),  user[_msgSender()].amount);
         emit minerStakeLog(_msgSender(), user[_msgSender()].amount, block.timestamp);
+    }
+
+
+
+    // 矿工质押
+    function minerStake( uint256 stakeAmount,  uint256 expire , bytes memory signature) public   {
+        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+        require(expire  > block.timestamp, "not yet expired"); // 还没到期
+        require( miner[_msgSender()].exist == true, "participated"); // 参与过了
+        require( stakeAmount > miner[_msgSender()].amount, "participated"); // 参与过了
+        require( miner[_msgSender()].unIntentMoney == false, "participated"); // 退回质押金不能参与
+
+        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(),signType.minerStake, stakeAmount, expire));
+        _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
+
+        usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount  - miner[_msgSender()].amount);
+        miner[_msgSender()].stakeAmount = stakeAmount;
+        miner[_msgSender()].amount = 0;
+        emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
     }
 
 
@@ -280,17 +307,30 @@ contract bidding is AccessControl, Pausable, ReentrancyGuard {
 
 
     //    退款矿工质押
-    function unPlanStake(companyType role, uint256 expire , bytes memory signature) public   {
+    function unPlanStake(companyType role , bytes memory signature) public onlyRole(ADMIN)   {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require( companyList[role].exist == true, "company  does not exist"); //   用户不存在
         require( companyList[role].unStake == false, "company  does not exist"); //
 
-        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender() ,signType.unPlanStake, role, expire));
-        _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
-
         companyList[role].unStake = true;
         usdt.safeTransfer(_msgSender(),  companyList[role].stakeAmount);
         emit minerStakeLog(_msgSender(), companyList[role].stakeAmount, block.timestamp);
+    }
+
+
+    // 矿工质押   意向金
+    function minerStake( uint256 amount,  uint256 expire , bytes memory signature) public   {
+        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+        require(expire  > block.timestamp, "not yet expired"); // 还没到期
+        require( miner[_msgSender()].exist == false, "participated"); // 参与过了
+
+        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(),signType.minerStake, amount, expire));
+        _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
+
+        usdt.safeTransferFrom(_msgSender(), address(this), amount);
+        miner[_msgSender()].amount += amount;
+        miner[_msgSender()].exist = true;
+        emit minerStakeLog(_msgSender(), amount, block.timestamp);
     }
 
 
