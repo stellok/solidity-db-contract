@@ -10,9 +10,9 @@ module.exports = async function (deployer, network, accounts) {
     await deployer.deploy(USDT, web3.utils.toWei('10000000000', 'ether'));
     //access information about your deployed contract instance
     const usdtContract = await USDT.deployed();
-    console.log(`USDT contract ${usdtContract.address}`)
+    console.log(`USDT contract : ${usdtContract.address}`)
     const usdtBalance = await usdtContract.balanceOf(accounts[0]);
-    console.log(`owner ${accounts[0]}`)
+    console.log(`owner : ${accounts[0]}`)
     console.log(`Owner USDT Balance: ${web3.utils.fromWei(usdtBalance, 'ether')}`)
 
     //deploy bidding
@@ -28,7 +28,7 @@ module.exports = async function (deployer, network, accounts) {
     )
 
     const bidContract = await Bidding.deployed()
-    console.log(`bidding contract ${bidContract.address}`)
+    console.log(`bidding contract : ${bidContract.address}`)
 
 
 

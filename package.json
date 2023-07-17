@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.2"
+    "@openzeppelin/contracts": "^4.9.2",
+    "ethers": "^6.6.4",
+    "web3": "^4.0.3"
   }
 }
