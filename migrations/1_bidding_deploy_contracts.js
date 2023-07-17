@@ -9,9 +9,19 @@ module.exports = async function(deployer,network,accounts) {
     //access information about your deployed contract instance
     const usdtContract = await USDT.deployed();
     console.log(`USDT contract ${usdtContract.address}`)
+    const usdtBalance = await usdtContract.balanceOf(accounts[0]);
+    console.log(`owner ${accounts[0]}`)
+    console.log(`Owner USDT Balance: ${usdtBalance}`)
 
     //deploy bidding
-    await deployer.deploy(Bidding,usdtContract.address,accounts[0],accounts[1],accounts[2],1,7,accounts[0])
+    await deployer.deploy(Bidding,
+        usdtContract.address, // IERC20 usdtAddr_
+        accounts[0],          // address owner_,
+        accounts[0],          // address founderAddr_
+        accounts[0],          // address adminAddr_
+        1,                    // service fee
+        7,                    // dd fee
+        accounts[0])          // address ddAddr_
     const bidContract = await Bidding.deployed()
     console.log(`bidding contract ${bidContract.address}`)
 
