@@ -132,10 +132,10 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         uint256 ddFee_,
         address ddAddr_
     ) {
-        grantRole(PLATFORM, _msgSender());
-        grantRole(ADMIN, adminAddr_);
-
         _transferOwnership(owner_);
+        _grantRole(PLATFORM, _msgSender());
+        _grantRole(ADMIN, adminAddr_);
+
         saleIsActive = false;
 
         ddFee = ddFee_;       //  尽调费
@@ -308,7 +308,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
 
     //    退款矿工质押
-    function unPlanStake(companyType role , bytes memory signature) public onlyRole(ADMIN)   {
+    function unPlanStake(companyType role) public onlyRole(ADMIN)   {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require( companyList[role].exist == true, "company  does not exist"); //   用户不存在
         require( companyList[role].unStake == false, "company  does not exist"); //
@@ -319,20 +319,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
     }
 
 
-//    // 矿工质押   意向金
-//    function minerStake( uint256 amount,  uint256 expire , bytes memory signature) public   {
-//        require(_msgSender() == tx.origin, "Refusal to contract transactions");
-//        require(expire  > block.timestamp, "not yet expired"); // 还没到期
-//        require( miner[_msgSender()].exist == false, "participated"); // 参与过了
-//
-//        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(),signType.minerStake, amount, expire));
-//        _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
-//
-//        usdt.safeTransferFrom(_msgSender(), address(this), amount);
-//        miner[_msgSender()].amount += amount;
-//        miner[_msgSender()].exist = true;
-//        emit minerStakeLog(_msgSender(), amount, block.timestamp);
-//    }
+
 
 
     // 查看认缴金额
