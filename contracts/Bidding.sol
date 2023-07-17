@@ -232,7 +232,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         subscribeLimitTime =subscribeLimitTime_;
     }
 
-    //TODO 少了USDT
+
     // @param stock 认购数
     // @param amount 5% stake
     function subscribe(uint256 stock) public {
@@ -250,7 +250,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         totalSold += stock;
         user[_msgSender()].amount += stock;
         user[_msgSender()].exist = true;
-        usdt.safeTransferFrom(_msgSender(), address(this), stock * stakeSharePric);
+        usdt.safeTransferFrom(_msgSender(), address(this), stock * stakeSharePrice);
         emit subscribeLog(_msgSender(), stock, stock * stakeSharePrice , block.timestamp);
     }
 
@@ -319,24 +319,23 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
     }
 
 
-    // 矿工质押   意向金
-    function minerStake( uint256 amount,  uint256 expire , bytes memory signature) public   {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(expire  > block.timestamp, "not yet expired"); // 还没到期
-        require( miner[_msgSender()].exist == false, "participated"); // 参与过了
-
-        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(),signType.minerStake, amount, expire));
-        _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
-
-        usdt.safeTransferFrom(_msgSender(), address(this), amount);
-        miner[_msgSender()].amount += amount;
-        miner[_msgSender()].exist = true;
-        emit minerStakeLog(_msgSender(), amount, block.timestamp);
-    }
+//    // 矿工质押   意向金
+//    function minerStake( uint256 amount,  uint256 expire , bytes memory signature) public   {
+//        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+//        require(expire  > block.timestamp, "not yet expired"); // 还没到期
+//        require( miner[_msgSender()].exist == false, "participated"); // 参与过了
+//
+//        bytes32 msgSplice = keccak256(abi.encodePacked(_msgSender(),signType.minerStake, amount, expire));
+//        _checkRole(PLATFORM, ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature));
+//
+//        usdt.safeTransferFrom(_msgSender(), address(this), amount);
+//        miner[_msgSender()].amount += amount;
+//        miner[_msgSender()].exist = true;
+//        emit minerStakeLog(_msgSender(), amount, block.timestamp);
+//    }
 
 
     // 查看认缴金额
-
     function viewSubscribe(address  account ) public view returns( uint256 ) {
         return user[account].amount;
     }
