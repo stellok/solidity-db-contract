@@ -130,7 +130,8 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         address adminAddr_,//  owner
         uint256 service_,
         uint256 ddFee_,
-        address ddAddr_
+        address ddAddr_,
+        address platformFeeAddr_
     ) {
         _transferOwnership(owner_);
         _grantRole(PLATFORM, _msgSender());
@@ -146,6 +147,8 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
         startTime = block.timestamp;
         usdt = usdtAddr_;
+
+        platformFeeAddr=platformFeeAddr_;
 
     }
 
