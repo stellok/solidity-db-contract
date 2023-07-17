@@ -239,7 +239,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         uint256 subscribeTime_,
         uint256 subscribeLimitTime_
     ) public onlyRole(PLATFORM) {
-        require(financingShare > 0, "financingShare cannot be zero"); //  不能为零
+        require(financingShare_ > 0, "financingShare cannot be zero"); //  不能为零
         require(stakeSharePrice_ > 0, "subscribeLimitTime_ cannot be zero"); //  未开启
         require(subscribeTime_ > 0, "subscribeTime_ cannot be zero"); //  不能为零
         require(subscribeLimitTime_ > 0, "subscribeLimitTime_ cannot be zero"); //  未开启
@@ -306,6 +306,10 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         );
     }
 
+   
+
+    event mLog(bytes32 msgSplice);
+    
     // 矿工质押
     function minerStake(
         uint256 stakeAmount,
@@ -326,6 +330,10 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
                 expire
             )
         );
+
+       
+        emit mLog(msgSplice);
+
         _checkRole(
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
