@@ -100,7 +100,6 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
     event payDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
-
     event uploadProjectLog(address addr, uint256 id, uint256 time);
     event minerIntentMoneyLog(address addr, uint256 id, uint256 time);
     event minerStakeLog(address addr, uint256 id, uint256 time);
@@ -194,6 +193,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         bytes32 msgSplice = keccak256(
             abi.encodePacked(_msgSender(), signType.minerStake, amount, expire)
         );
+
         _checkRole(
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
@@ -306,10 +306,6 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         );
     }
 
-   
-
-    event mLog(bytes32 msgSplice);
-    
     // 矿工质押
     function minerStake(
         uint256 stakeAmount,
@@ -330,9 +326,6 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
                 expire
             )
         );
-
-       
-        emit mLog(msgSplice);
 
         _checkRole(
             PLATFORM,
