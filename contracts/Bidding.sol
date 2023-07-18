@@ -382,15 +382,18 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //    退款矿工质押
-    function unPlanStake(companyType role) public onlyRole(ADMIN) {
+    function unPlanStake(
+        companyType role,
+        address addr
+    ) public onlyRole(ADMIN) {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(companyList[role].exist == true, "company  does not exist"); //   用户不存在
         require(companyList[role].unStake == false, "company  does not exist"); //
 
         companyList[role].unStake = true;
-        usdt.safeTransfer(_msgSender(), companyList[role].stakeAmount);
+        usdt.safeTransfer(addr, companyList[role].stakeAmount);
         emit minerStakeLog(
-            _msgSender(),
+            addr,
             companyList[role].stakeAmount,
             block.timestamp
         );
