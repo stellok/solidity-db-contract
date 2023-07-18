@@ -15,7 +15,7 @@ contract("BiddingTest-subscribe", (accounts) => {
         const result = await usdt.transfer(user, web3.utils.toWei('100000', 'ether'))
         assert.equal(result.receipt.status, true, "transfer usdt failed !");
         const balance = await usdt.balanceOf(user)
-        console.log(` USDT ${web3.utils.fromWei(balance, 'ether')} \n`)
+        console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
 
         //startSubscribe 
         // uint256 financingShare_,
@@ -54,7 +54,7 @@ contract("BiddingTest-subscribe", (accounts) => {
 
         console.log(`after totalSold = ${totalSold1}`)
 
-        console.log(`${JSON.stringify(sub.receipt.logs)}`)
+        console.log(`logs: ${JSON.stringify(sub.receipt.logs,null,3)}`)
     });
 
     it("testing unSubscribe() should assert true", async function () {
@@ -87,6 +87,6 @@ contract("BiddingTest-subscribe", (accounts) => {
 
         console.log(`after totalSold = ${totalSold1}`)
 
-        console.log(`${JSON.stringify(sub.receipt.logs)}`)
+        console.log(`logs: ${JSON.stringify(sub.receipt.logs,null,3)}`)
     });
 })

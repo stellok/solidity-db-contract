@@ -117,7 +117,7 @@ contract("BiddingTest-main", (accounts) => {
     //call  minerIntentMoney
     let result = await bid.minerIntentMoney(stakeAmount, expire, signature);
     assert.equal(result.receipt.status, true, "minerIntentMoney failed !");
-    console.log(`result ${JSON.stringify(result.receipt.logs)}`)
+    console.log(`result ${JSON.stringify(result.receipt.logs,null,3)}`)
 
     // let balanceOf =  await usdt.balanceOf(bid.address);
     // console.log(`balanceOf ${balanceOf}`)
