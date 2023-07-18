@@ -3,7 +3,7 @@ const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const ethers = require("ethers");
 
-contract("BiddingTest-unMinerIntentMoney", (accounts) => {
+contract("BiddingTest-MinerIntentMoney", (accounts) => {
 
 
     let miner = accounts[3]
