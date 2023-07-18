@@ -7,11 +7,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // 招标合约
-contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
+contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
@@ -126,9 +125,10 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         address ddAddr_,
         address platformFeeAddr_
     ) {
-        _transferOwnership(owner_);
-        _grantRole(PLATFORM, _msgSender());
-        _grantRole(ADMIN, adminAddr_);
+        // _transferOwnership(owner_);
+        _setRoleAdmin(PLATFORM, ADMIN);
+        _setupRole(PLATFORM, _msgSender());
+        _setupRole(ADMIN, adminAddr_);
 
         saleIsActive = false;
 
@@ -219,7 +219,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
             abi.encodePacked(_msgSender(), signType.unMinerStake, expire)
         );
         _checkRole(
-            ADMIN,
+            PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
 
@@ -250,6 +250,7 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         subscribeLimitTime = subscribeLimitTime_;
     }
 
+    // TODO Fix
     // @param stock 认购数
     // @param amount 5% stake
     function subscribe(uint256 stock) public {
@@ -402,20 +403,24 @@ contract Bidding is AccessControl, Ownable, Pausable, ReentrancyGuard {
         return user[account].amount;
     }
 
-    function pause() public whenNotPaused onlyOwner {
+    function pause() public whenNotPaused onlyRole(ADMIN) {
         _pause();
     }
 
-    function unpause() public whenPaused onlyOwner {
+    function unpause() public whenPaused onlyRole(ADMIN) {
         _unpause();
     }
 
-    function setSaleIsActive(bool newState_) public onlyOwner {
+    function setSaleIsActive(bool newState_) public onlyRole(ADMIN) {
         saleIsActive = newState_;
     }
 
     // 紧急提现
-    function withdraw(uint256 amount, address addr) public onlyOwner {
+    function withdraw(uint256 amount, address addr) public onlyRole(ADMIN) {
         usdt.safeTransfer(addr, amount);
+    }
+
+    function isParticipated(address account) public view returns (bool) {
+        return miner[account].exist;
     }
 }
