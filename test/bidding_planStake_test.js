@@ -53,7 +53,7 @@ contract("BiddingTest-planStake", (accounts) => {
 
         let expire = 1689753919
 
-       
+
         //sign message
         let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint8", "uint256", "uint256", "uint256"], [user, 4, role, totalAmount, stakeAmount, expire])
         console.log(`digest : ${digest}`)
@@ -98,7 +98,8 @@ contract("BiddingTest-planStake", (accounts) => {
 
         let balanceOf = await usdt.balanceOf(user);
         console.log(`Now balance : ${web3.utils.fromWei(balanceOf, 'ether')}`)
-        expect(stakeAmount).to.equal(stakeAmount)
+        
+        assert.equal(balanceOf.toString(), web3.utils.toBN(totalAmount).add(origUsdtBalance).toString(), "withdraw failed !");
 
         console.log(`logs: ${JSON.stringify(sub.receipt.logs, null, 3)}`)
     });
