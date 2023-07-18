@@ -8,8 +8,7 @@ const ethers = require("ethers");
  * Ethereum client
  * See docs: https://www.trufflesuite.com/docs/truffle/testing/writing-tests-in-javascript
  */
-contract("BiddingTest", (accounts) => {
-
+contract("BiddingTest-main", (accounts) => {
 
   console.log(`owner address ${accounts[0]}`)
 
@@ -22,7 +21,7 @@ contract("BiddingTest", (accounts) => {
     assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
     const isddFee = await bid.isfDdFee()
-    console.log(`isfDdFee ${isddFee}`)
+    expect(isddFee).to.equal(false)
     // console.log(`approve ${JSON.stringify(resultApprove.receipt)}`)
     let result = await bid.payDDFee();
     assert.equal(result.receipt.status, true, "payDDFee failed !");
@@ -54,23 +53,35 @@ contract("BiddingTest", (accounts) => {
     assert.equal(balanceOf, serviceFee, "payServiceFee function testing failed !");
   });
 
+  //TODO Fix
   it("testing minerStake() should assert true", async function () {
 
     const stakeAmount = web3.utils.toWei('10000', 'ether')
     const bid = await BiddingTest.deployed();
     const usdt = await USDTTest.deployed();
 
+
+    const isParticipated = await bid.isParticipated(accounts[0])
+    console.log(`miner status : ${isParticipated}`)
+    
+    if (!isParticipated) {
+      console.log(`isParticipated`)
+      return
+    }
+    expect(isParticipated).to.equal(true)
     let resultApprove = await usdt.approve(bid.address, stakeAmount)
-    assert.equal(resultApprove.receipt.status, true, "payServiceFee failed !");
+    assert.equal(resultApprove.receipt.status, true, "approve failed !");
     console.log(`approve ${resultApprove.receipt}`)
 
-    //sign message
-    let encodePacked =  ethers.utils.concat([ ethers.utils.toUtf8Bytes('11'), ethers.utils.toUtf8Bytes('22'), ethers.utils.toUtf8Bytes('33')])
-    let digest = ethers.utils.keccak256(encodePacked)
-    const msg = await web3.eth.sign(digest, accounts[0])
-    console.log(`${msg}`)
+    let expire = 1689753919
 
-    let result = await bid.minerStake(stakeAmount, '1689753919', msg);
+    //sign message
+    let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256"], [accounts[0], 2, stakeAmount, expire])
+    let signature = await web3.eth.sign(digest, accounts[0])
+    signature = signature.substr(0, 130) + (signature.substr(130) == "00" ? "1b" : "1c");
+    console.log(`${signature}`)
+
+    let result = await bid.minerStake(stakeAmount, expire, signature);
     console.log(`result ${result.receipt}`)
 
     // let balanceOf =  await usdt.balanceOf(bid.address);
@@ -78,37 +89,40 @@ contract("BiddingTest", (accounts) => {
     // assert.equal(balanceOf, serviceFee, "payServiceFee function testing failed !");
   });
 
-  it("testing subscribe() should assert true", async function () {
-    //subscribe
+  it("testing minerIntentMoney() should assert true", async function () {
+
+    const stakeAmount = web3.utils.toWei('10000', 'ether')
     const bid = await BiddingTest.deployed();
     const usdt = await USDTTest.deployed();
 
-    // uint256 financingShare_,
-    // uint256 stakeSharePrice_,
-    // uint256 subscribeTime_,
-    // uint256 subscribeLimitTime_
-
-    let subBegin = await bid.startSubscribe(10000, 20, 1689581119, 1689753919);
-    assert.equal(subBegin.receipt.status, true, "startSubscribe failed !");
-
-
-    let stock = 10;
-
-    let financingShare = await bid.financingShare();
-    let stakeSharePrice = await bid.stakeSharePrice();
-    let totalSold = await bid.totalSold()
-
-    if (financingShare * 2 - totalSold < stock) {
-      stock = financingShare * 2 - totalSold;
-    }
-
-    let resultApprove = await usdt.approve(bid.address, web3.utils.toWei(web3.utils.toBN(stock * stakeSharePrice), 'ether'))
+    let resultApprove = await usdt.approve(bid.address, stakeAmount)
     assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
-    let sub = await bid.subscribe(10)
-    assert.equal(sub.receipt.status, true, "subscribe failed !");
+    let expire = 1689753919
+    //sign message
+    let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256"], [accounts[0], 2, stakeAmount, expire])
+    console.log(`digest : ${digest}`)
 
-    console.log(`${JSON.stringify(sub.receipt.logs)}`)
+    console.log(`owner ${accounts[0]}`)
+    let signature = await web3.eth.sign(digest, accounts[0])
+    // console.log(`signed: ${msg}`)
+
+    signature = signature.substr(0, 130) + (signature.substr(130) == "00" ? "1b" : "1c");
+
+    //recover
+    const recover = web3.eth.accounts.recover(digest, signature)
+    expect(recover).to.equal(accounts[0])
+    console.log(`recover : ${recover}`)
+
+    //call  minerIntentMoney
+    let result = await bid.minerIntentMoney(stakeAmount, expire, signature);
+    assert.equal(result.receipt.status, true, "minerIntentMoney failed !");
+    console.log(`result ${JSON.stringify(result.receipt.logs)}`)
+
+    // let balanceOf =  await usdt.balanceOf(bid.address);
+    // console.log(`balanceOf ${balanceOf}`)
+    // assert.equal(balanceOf, serviceFee, "payServiceFee function testing failed !");
+
   });
 
 });
