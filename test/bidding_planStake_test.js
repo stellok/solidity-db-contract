@@ -31,6 +31,7 @@ contract("BiddingTest-planStake", (accounts) => {
     let user = accounts[4]
     let owner = accounts[0]
     let role = 1
+    let stakeAmount = web3.utils.toWei('1000', 'ether'), totalAmount = stakeAmount
 
     before(async function () {
         const bid = await BiddingTest.deployed();
@@ -52,7 +53,7 @@ contract("BiddingTest-planStake", (accounts) => {
 
         let expire = 1689753919
 
-        let stakeAmount = web3.utils.toWei('1000', 'ether'), totalAmount = stakeAmount
+       
         //sign message
         let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint8", "uint256", "uint256", "uint256"], [user, 4, role, totalAmount, stakeAmount, expire])
         console.log(`digest : ${digest}`)
@@ -78,6 +79,8 @@ contract("BiddingTest-planStake", (accounts) => {
         let balanceOf = await usdt.balanceOf(bid.address);
         console.log(`Bid usdt balance : ${web3.utils.fromWei(balanceOf, 'ether')}`)
 
+        assert.equal(balanceOf, totalAmount, "usdt balance transfer failed !");
+
         console.log(`logs: ${JSON.stringify(sub.receipt.logs, null, 3)}`)
     });
 
@@ -95,6 +98,7 @@ contract("BiddingTest-planStake", (accounts) => {
 
         let balanceOf = await usdt.balanceOf(user);
         console.log(`Now balance : ${web3.utils.fromWei(balanceOf, 'ether')}`)
+        expect(stakeAmount).to.equal(stakeAmount)
 
         console.log(`logs: ${JSON.stringify(sub.receipt.logs, null, 3)}`)
     });
