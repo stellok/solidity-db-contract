@@ -346,14 +346,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     // 方案质押
     function planStake(
         companyType role,
-        address companyAddr,
         uint256 totalAmount,
         uint256 stakeAmount,
         uint256 expire,
         bytes memory signature
     ) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(_msgSender() == companyAddr, "must be submitted by yourself"); // 必须是自己提交
         require(
             expire + companyStakeLimitTime > block.timestamp,
             "not yet expired"
