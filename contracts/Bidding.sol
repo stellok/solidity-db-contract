@@ -16,7 +16,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
     bytes32 public constant ADMIN = keccak256("ADMIN"); // 管理员
 
-    bool public saleIsActive;
+    // bool public saleIsActive;
     uint256 startTime; //  开始时间  设置 minerStake
     uint256 public totalSold;
 
@@ -128,8 +128,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         _setRoleAdmin(PLATFORM, ADMIN);
         _setupRole(PLATFORM, _msgSender());
         _setupRole(ADMIN, adminAddr_);
-
-        saleIsActive = false;
 
         ddFee = ddFee_; //  尽调费
         DDAddr = ddAddr_; //矿场提供方
@@ -409,10 +407,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     function unpause() public whenPaused onlyRole(ADMIN) {
         _unpause();
-    }
-
-    function setSaleIsActive(bool newState_) public onlyRole(ADMIN) {
-        saleIsActive = newState_;
     }
 
     // 紧急提现
