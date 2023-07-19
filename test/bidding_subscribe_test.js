@@ -50,9 +50,14 @@ contract("BiddingTest-subscribe", (accounts) => {
         assert.equal(sub.receipt.status, true, "subscribe failed !");
 
         let totalSold1 = await bid.totalSold()
+        let Subscribed = await bid.viewSubscribe(user)
+
+        assert.equal(stock, Subscribed, "stock != stock");
         assert.equal(totalSold1, stock, "totalSold1 != stock");
 
         console.log(`after totalSold = ${totalSold1}`)
+
+        
 
         console.log(`logs: ${JSON.stringify(sub.receipt.logs,null,3)}`)
     });
