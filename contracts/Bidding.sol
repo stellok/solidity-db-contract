@@ -117,7 +117,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     constructor(
         IERC20 usdtAddr_,
-        address owner_,
         address founderAddr_,
         address adminAddr_, //  owner
         uint256 service_,
