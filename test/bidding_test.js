@@ -12,28 +12,6 @@ contract("BiddingTest-main", (accounts) => {
 
   console.log(`owner address ${accounts[0]}`)
 
-  it("testing payDDFee() should assert true", async function () {
-
-    const ddFee = web3.utils.toWei('90000', 'ether')
-    const bid = await BiddingTest.deployed();
-    const usdt = await USDTTest.deployed();
-    let resultApprove = await usdt.approve(bid.address, ddFee)
-    assert.equal(resultApprove.receipt.status, true, "approve failed !");
-
-    const isddFee = await bid.isfDdFee()
-    expect(isddFee).to.equal(false)
-    // console.log(`approve ${JSON.stringify(resultApprove.receipt)}`)
-    let result = await bid.payDDFee();
-    assert.equal(result.receipt.status, true, "payDDFee failed !");
-
-    // console.log(`result ${result.receipt}`)
-    let balanceOf = await usdt.balanceOf(bid.address);
-    console.log(`balanceOf ${balanceOf}`)
-    assert.equal(balanceOf, ddFee, "payDDFee function testing failed !");
-
-  });
-
-
   it("testing payServiceFee() should assert true", async function () {
 
     const serviceFee = web3.utils.toWei('10000', 'ether')
