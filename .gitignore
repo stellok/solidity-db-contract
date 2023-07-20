@@ -134,6 +134,8 @@ dist
 # depedencies
 node_modules
 
+.idea
+.env
 # testing
 coverage
 
@@ -178,4 +180,16 @@ package-lock.json
 
 # Go workspace file
 go.work
+
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+
+# Hardhat files
+cache
+artifacts
 
