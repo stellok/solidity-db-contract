@@ -107,10 +107,10 @@ module.exports = async function (deployer, network, accounts) {
         bidContract.address,                                                 // address bidding_
         accounts[0],                                                         // address platformFeeAddr_
         accounts[0],                                                         // address founderAddr_
-        [2, 3, 4, 5, 6, 7, 8, 9, 22, 33],                                     // []feeList_10
+        [2, 3, 4, 5, 6, 7, 8, 9, 22, 33],                                    // []feeList_10
         addrList_7,                                                          // []addrList_7
-        [2, 3, 4, 5, 6, 7, 8, 9, 10],                                         // []limitTimeList_9
-        [12, 3, 4, 5, 24, 7, 8, 9],                                          // []shareList_8
+        [1, 864000, 4, 5, 6, 7, 8, 9, 10],                                        // []limitTimeList_9
+        [10000, 1000, 2000, 7000, 24, 7, 8, 9],                              // []shareList_8
     )
 
     const FinancingContract = await Financing.deployed()

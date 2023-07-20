@@ -71,7 +71,7 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     uint256 public issuedTotalShare; //  发行总股数
     uint256 public publicSaleTotalSold; //  第一阶段总数量
 
-    uint256 whitelistPaymentTime; // 白名单开始时间
+    uint256 public whitelistPaymentTime; // 白名单开始时间
     uint256 publicSaleTime; // 公售开始时间
     uint256 startBuildTime; //  开始建造时间
     uint256 bargainTime; // 捡漏开始时间
@@ -197,9 +197,9 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         address platformFeeAddr_,
         address founderAddr_,
         FeeType memory feeList_, // fees
-        AddrType memory addrList_, // address  集合
-        LimitTimeType memory limitTimeList_, // times  集合
-        ShareType memory shareList_ // Share  集合
+        AddrType memory addrList_, // address  集合 //TODO check
+        LimitTimeType memory limitTimeList_, // times  集合 //TODO check
+        ShareType memory shareList_ // Share  集合 //TODO check
     ) {
         //        grantRole(MINTER_ROLE, _msgSender());
 
@@ -272,7 +272,8 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
         require(shareType.financingShare > publicSaleTotalSold, "sold out");
-        require(paidUser[_msgSender()] > 0, " Cannot participate repeatedly"); //  不能重复参与
+        // TODO
+        // require(paidUser[_msgSender()] > 0, " Cannot participate repeatedly"); //  不能重复参与
 
         //  不能小于零
         require(
@@ -306,7 +307,8 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         );
 
         // 铸造凭证 nft
-        NFT.mint(_msgSender(), receiptToken, amount);
+        //TODO ERROR
+        // NFT.mint(_msgSender(), receiptToken, amount);
         _whetherFirstPaymentFinish();
     }
 
@@ -378,6 +380,7 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
         // 铸造nft
         NFT.mint(_msgSender(), receiptToken, amount_);
+
         _whetherFirstPaymentFinish();
     }
 
