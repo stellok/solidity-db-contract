@@ -2,6 +2,7 @@ const Web3 = require('web3');
 const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const ethers = require("ethers");
+var tools = require('../tools/web3-utils');
 
 contract("BiddingTest-MinerIntentMoney", (accounts) => {
 
@@ -14,7 +15,7 @@ contract("BiddingTest-MinerIntentMoney", (accounts) => {
         const result = await usdt.transfer(miner, web3.utils.toWei('100000', 'ether'))
         assert.equal(result.receipt.status, true, "transfer usdt failed !");
         const balance = await usdt.balanceOf(miner)
-        console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
+        console.log(` ${miner} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
     });
 
     const stakeAmount = web3.utils.toWei('10000', 'ether')
@@ -27,9 +28,9 @@ contract("BiddingTest-MinerIntentMoney", (accounts) => {
         let resultApprove = await usdt.approve(bid.address, stakeAmount, { from: miner })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
-        let expire = 1689753919
+        let expire = 1690429294
         //sign message
-        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256"], [miner, 2, stakeAmount, expire])
+        let digest = ethers.solidityPackedKeccak256(["address", "uint256", "uint256", "address", "string"], [miner, stakeAmount, expire, bid.address, tools.getsignature(bid, 'minerIntentMoney')])
         console.log(`digest : ${digest}`)
 
         console.log(`owner : ${accounts[0]}`)
@@ -46,7 +47,7 @@ contract("BiddingTest-MinerIntentMoney", (accounts) => {
         //call  minerIntentMoney
         let result = await bid.minerIntentMoney(stakeAmount, expire, signature, { from: miner });
         assert.equal(result.receipt.status, true, "minerIntentMoney failed !");
-        console.log(`logs : ${JSON.stringify(result.receipt.logs,null,3)} \n`)
+        console.log(`logs : ${JSON.stringify(result.receipt.logs, null, 3)} \n`)
 
         // let balanceOf =  await usdt.balanceOf(bid.address);
         // console.log(`balanceOf ${balanceOf}`)
@@ -63,10 +64,10 @@ contract("BiddingTest-MinerIntentMoney", (accounts) => {
 
         let origUsdtBalance = await usdt.balanceOf(miner);
         console.log(`origUsdtBalance : ${web3.utils.fromWei(origUsdtBalance, 'ether')}`)
-        
-        let expire = 1689753919
+
+        let expire = 1690429294
         //sign message
-        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256"], [miner, 3, expire])
+        let digest = ethers.solidityPackedKeccak256(["address", "uint256", "address", "string"], [miner, expire, bid.address, tools.getsignature(bid, 'unMinerIntentMoney')])
         console.log(`digest : ${digest}`)
 
         console.log(`owner ${accounts[0]}`)

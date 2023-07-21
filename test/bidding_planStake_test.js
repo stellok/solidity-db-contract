@@ -2,6 +2,7 @@ const Web3 = require('web3');
 const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const ethers = require("ethers");
+var tools = require('../tools/web3-utils');
 
 // ---- param ----- 
 // companyType role,
@@ -55,7 +56,7 @@ contract("BiddingTest-planStake", (accounts) => {
 
 
         //sign message
-        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint8", "uint256", "uint256", "uint256"], [user, 4, role, totalAmount, stakeAmount, expire])
+        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256", "uint256","address", "string"], [user, role, totalAmount, stakeAmount, expire,bid.address])
         console.log(`digest : ${digest}`)
 
         console.log(`owner ${accounts[0]}`)
@@ -98,7 +99,7 @@ contract("BiddingTest-planStake", (accounts) => {
 
         let balanceOf = await usdt.balanceOf(user);
         console.log(`Now balance : ${web3.utils.fromWei(balanceOf, 'ether')}`)
-        
+
         assert.equal(balanceOf.toString(), web3.utils.toBN(totalAmount).add(origUsdtBalance).toString(), "withdraw failed !");
 
         console.log(`logs: ${JSON.stringify(sub.receipt.logs, null, 3)}`)

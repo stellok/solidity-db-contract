@@ -6,9 +6,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "./lib/IERC1155S.sol";
+import "./NFT721Impl.sol";
 
 //interface IBidding { tender.sol
 interface IBidding {
@@ -17,18 +16,21 @@ interface IBidding {
 }
 
 // 股权融资
-contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
+contract Financing is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     bool public saleIsActive;
 
+    //type(UniswapV2Pair).creationCode;
+    // bytes public BYTECODE = type(NFT721Impl).creationCode;
+
     IERC20 public usdt;
-    IERC1155S public NFT; // 股权  equityNFT
+    NFT721Impl public receiptNFT; // 股权  equityNFT
+    NFT721Impl public shareNFT; // 股权  equityNFT
     IBidding public bidding; // 股权  equityNFT
 
-    uint256 constant receiptToken = 1;
-    uint256 constant shareToken = 2;
+    uint256 public constant maxNftAMOUNT = 10;
 
     // 电力质押时间
     bool public electrStakeLock;
@@ -60,7 +62,7 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
     AddrType public addrType;
 
-    mapping(address => uint256) public paidUser; // 实缴用户
+    mapping(address => bool) public paidUser; // 实缴用户
 
     LimitTimeType public limitTimeType;
 
@@ -142,11 +144,7 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     event operationsReceiveLog(address addr_, uint256 amount_, uint256 time_);
     event spvReceiveLog(address addr_, uint256 amount_, uint256 time_);
     event electrStakeLog(address feeAddr, uint256 amount, uint256 time_);
-    event redeemRemainPaymentLog(
-        uint256 tokenId_,
-        uint256 balance_,
-        uint256 amount_
-    );
+    event redeemRemainPaymentLog(uint256 tokenId_, uint256 amount_);
     event remainBargainLog(
         address account_,
         uint256 balance_,
@@ -157,21 +155,15 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         address account_,
         uint256 amount_,
         uint256 sharePrice,
-        uint256 tokenId_,
         uint256 time_
     );
     event whiteListPaymentLog(
         address account_,
-        uint256 tokenId_,
         uint256 amount_,
         uint256 price_,
         uint256 time_
     );
-    event redeemPublicSaleLog(
-        uint256 tokenId_,
-        uint256 balance_,
-        uint256 amount_
-    );
+    event redeemPublicSaleLog(uint256 tokenId_, uint256 amount_);
 
     event energyReceiveLog(address, uint256 amount_, uint256 time_);
     event startPublicSaleLog(uint256 unpaid_, uint256 time_);
@@ -199,9 +191,13 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         FeeType memory feeList_, // fees
         AddrType memory addrList_, // address  集合 //TODO check
         LimitTimeType memory limitTimeList_, // times  集合 //TODO check
-        ShareType memory shareList_ // Share  集合 //TODO check
+        ShareType memory shareList_, // Share  集合 //TODO check
+        string memory uri_1,
+        string memory uri_2
     ) {
         //        grantRole(MINTER_ROLE, _msgSender());
+
+        whitelistPaymentTime = block.timestamp;
 
         saleIsActive = false;
 
@@ -219,12 +215,23 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         require(feeList_.buildInsuranceFee != 0, "buildInsuranceFee == 0"); // 建造保险费
         require(feeList_.insuranceFee != 0, "insuranceFee == 0"); // 保修费
         require(feeList_.spvFee != 0, "spvFee== 0"); // 信托管理费
-        require(
-            feeList_.publicSalePlatformFee != 0,
-            "publicSalePlatformFee == 0"
-        ); // 公售平台费
-        require(feeList_.remainPlatformFee != 0, "remainPlatformFee == 0"); // 公售平台费
+        // require(
+        //     feeList_.length == uint256(feeType.remainPlatformFee),
+        //     "feeList_  Insufficient number of parameters"
+        // ); // 参数数量不足
 
+        // require(
+        //     addrList_.length == uint256(addrType.electrAddr),
+        //     "addrList_ Insufficient number of parameters"
+        // ); // 参数数量不足
+        // require(
+        //     limitTimeList_.length == uint256(limitTimeType.spvIntervalTime),
+        //     "Insufficient number of parameters"
+        // ); // 参数数量不足
+        // require(
+        //     shareList_.length == uint256(shareType.remainSharePrice),
+        //     "Insufficient number of parameters"
+        // ); // 参数数量不足
         require(address(usdtAddr_) != address(0), "usdt Can not be empty");
         require(
             platformFeeAddr_ != address(0),
@@ -235,7 +242,21 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         platformFeeAddr = platformFeeAddr_; //平台收款地址
 
         founderAddr = founderAddr_;
+        // for (uint i = 1; i < feeList_.length; i++) {
+        //     feeType(i)] = feeList_[i;
+        // }
+        // for (uint i = 1; i < addrList_.length; i++) {
+        //     require(addrList_[i] != address(0), "address not zero");
+        //     addrType(i) = addrList_[i];
+        // }
 
+        // for (uint i = 1; i < limitTimeList_.length; i++) {
+        //     limitTimeType(i)] = limitTimeList_[i;
+        // }
+
+        // for (uint i = 1; i < shareList_.length; i++) {
+        //     shareType(i)] = shareList_[i;
+        // }
         require(
             shareType.sharePrice ==
                 shareType.stakeSharePrice +
@@ -251,20 +272,44 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
             "share verification failed"
         );
 
+        address receiptAddr = deployNFT("DB", "DB", address(this));
+        address shareAddr = deployNFT("DB1", "DB1", address(this));
+
+        receiptNFT = NFT721Impl(receiptAddr);
+        receiptNFT.setBaseURI(uri_1);
+
+        shareNFT = NFT721Impl(shareAddr);
+        shareNFT.setBaseURI(uri_2);
+
         bidding = bidding_;
         usdt = usdtAddr_;
-        schedule = ActionChoices.INIT;
+        schedule = ActionChoices.whitelistPayment;
     }
 
-    // 设置NFT
-    function SetNft(IERC1155S NFTAddr_) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(_msgSender() == platformAddr, "permission denied");
-        require(schedule == ActionChoices.INIT, "not PAID status");
-        require(address(NFTAddr_) != address(0), "NFT Can not be empty");
-        NFT = NFTAddr_;
-        whitelistPaymentTime = block.timestamp;
-        schedule = ActionChoices.whitelistPayment;
+    function deployNFT(
+        string memory name_,
+        string memory symbol_,
+        address owner_
+    ) public returns (address) {
+        bytes memory bytecode = type(NFT721Impl).creationCode;
+
+        bytes memory initCode = abi.encodePacked(
+            bytecode,
+            abi.encode(name_, symbol_, owner_)
+        );
+
+        bytes32 shareSalt = keccak256(abi.encodePacked(address(this), "share"));
+
+        address deployedContract;
+        assembly {
+            deployedContract := create2(
+                0,
+                add(initCode, 32),
+                mload(initCode),
+                shareSalt
+            )
+        }
+        return deployedContract;
     }
 
     //  白名单支付
@@ -272,9 +317,9 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
         require(shareType.financingShare > publicSaleTotalSold, "sold out");
-        // TODO
-        // require(paidUser[_msgSender()] > 0, " Cannot participate repeatedly"); //  不能重复参与
+        require(!paidUser[_msgSender()], " Cannot participate repeatedly"); //  不能重复参与
 
+        paidUser[_msgSender()] = true;
         //  不能小于零
         require(
             whitelistPaymentTime + limitTimeType.publicSaleLimitTime >
@@ -284,6 +329,7 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
         //  查看招投标合约用户质押状态 数量, 状态,
         uint256 amount = bidding.viewSubscribe(_msgSender());
+
         // 必须为锁定状态
         require(amount > 0, "Not yet subscribed");
         // 数量 大于0
@@ -300,15 +346,13 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
         emit whiteListPaymentLog(
             _msgSender(),
-            receiptToken,
             amount,
             shareType.firstSharePrice,
             block.timestamp
         );
 
         // 铸造凭证 nft
-        //TODO ERROR
-        // NFT.mint(_msgSender(), receiptToken, amount);
+        receiptNFT.mint(_msgSender(), amount);
         _whetherFirstPaymentFinish();
     }
 
@@ -344,11 +388,16 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     }
 
     // 公售
-    // 完全公售
+    //TODO check 30%
+    //TODO
     // @param amount_股数
     function publicSale(uint256 amount_) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.publicSale, "not PAID status");
+        require(
+            amount_ <= maxNftAMOUNT && amount_ > 0,
+            "amount Limit Exceeded"
+        ); // 超出限制
         // 判断状态
         require(
             shareType.financingShare > publicSaleTotalSold,
@@ -360,7 +409,6 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
                 block.timestamp,
             "time expired"
         );
-        require(amount_ > 0, "Not yet subscribed"); // 数量 大于0
 
         if (shareType.financingShare - publicSaleTotalSold < amount_) {
             amount_ = shareType.financingShare - publicSaleTotalSold;
@@ -369,18 +417,17 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
-            amount_ * shareType.firstSharePrice
+            amount_ * (shareType.firstSharePrice - shareType.stakeSharePrice)
         );
         emit publicSaleLog(
             _msgSender(),
             amount_,
-            amount_ * shareType.firstSharePrice,
+            amount_ * (shareType.firstSharePrice - shareType.stakeSharePrice),
             block.timestamp
         );
 
         // 铸造nft
-        NFT.mint(_msgSender(), receiptToken, amount_);
-
+        receiptNFT.mint(_msgSender(), amount_);
         _whetherFirstPaymentFinish();
     }
 
@@ -403,30 +450,36 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     }
 
     // 退回公售
-    function redeemPublicSale() public {
+    function redeemPublicSale(uint256[] memory tokenIdList) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
         );
 
-        uint256 balance = NFT.balanceOf(_msgSender(), receiptToken);
-        require(balance > 0, "Insufficient balance");
-        // 查看余额
-        // 铸造nft
-        NFT.burn(_msgSender(), receiptToken, balance);
-        // 铸造nft
+        for (uint i = 0; i < tokenIdList.length; i++) {
+            require(
+                receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
+                "Insufficient balance"
+            ); // 不是nft  所有者
+
+            issuedTotalShare -= 1;
+            receiptNFT.burn(tokenIdList[i]);
+            usdt.safeTransferFrom(
+                _msgSender(),
+                address(this),
+                shareType.remainSharePrice
+            );
+
+            emit redeemPublicSaleLog(
+                tokenIdList[i],
+                shareType.firstSharePrice + shareType.stakeSharePrice
+            );
+        }
 
         usdt.safeTransfer(
             _msgSender(),
-            balance * (shareType.firstSharePrice + shareType.stakeSharePrice)
-        );
-        // 打钱
-
-        emit redeemPublicSaleLog(
-            receiptToken,
-            balance,
-            balance * (shareType.firstSharePrice + shareType.stakeSharePrice)
+            tokenIdList.length * shareType.firstSharePrice
         );
     }
 
@@ -463,7 +516,7 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     }
 
     // 用户付尾款
-    function remainPayment() public {
+    function remainPayment(uint256[] memory tokenIdList) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(
             schedule == ActionChoices.remainPayment,
@@ -478,37 +531,36 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
             "time expired"
         );
 
-        //  查询  nft  1155 余额并销毁
-        uint256 balance = NFT.balanceOf(_msgSender(), receiptToken);
-        //  发行同数量NFT
-        require(balance > 0, "Insufficient receiptToken"); // 余额不足
+        for (uint i = 0; i < tokenIdList.length; i++) {
+            require(
+                receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
+                "Insufficient balance"
+            ); // 不是nft  所有者
+            issuedTotalShare += 1;
+            receiptNFT.burn(tokenIdList[i]);
+        }
 
-        issuedTotalShare += balance;
-        NFT.burn(_msgSender(), receiptToken, balance);
-        NFT.mint(_msgSender(), shareToken, balance);
+        shareNFT.mint(_msgSender(), tokenIdList.length);
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
-            balance * shareType.remainSharePrice
+            tokenIdList.length * shareType.remainSharePrice
         );
 
         emit remainPaymentLog(
             _msgSender(),
-            balance,
-            balance * shareType.remainSharePrice,
-            shareToken,
+            tokenIdList.length,
+            shareType.remainSharePrice,
             block.timestamp
         );
-
         _whetherFinish();
     }
 
-    //TODO
     //  检查是否完成
     function _whetherFinish() private {
         if (issuedTotalShare >= shareType.financingShare) {
-            NFT.mint(platformFeeAddr, shareToken, shareType.platformShare);
-            NFT.mint(founderAddr, shareToken, shareType.founderShare);
+            shareNFT.mint(platformFeeAddr, shareType.platformShare);
+            shareNFT.mint(founderAddr, shareType.founderShare);
             schedule = ActionChoices.FINISH;
             emit whetherFinishLog(true, block.timestamp);
         }
@@ -542,6 +594,10 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.Bargain, "not PAID status");
         require(issuedTotalShare < shareType.financingShare, "Sold out");
+        require(
+            amount_ <= maxNftAMOUNT && amount_ > 0,
+            "amount Limit Exceeded"
+        );
 
         //  不能小于零
         require(
@@ -551,12 +607,12 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
 
         // 余额不足
         uint256 balance = shareType.financingShare - issuedTotalShare;
-
+        require(balance <= 0, "Sold out");
         if (amount_ > balance) {
             amount_ = balance;
         }
         issuedTotalShare += amount_;
-        NFT.mint(_msgSender(), shareToken, amount_);
+        shareNFT.mint(_msgSender(), amount_);
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
@@ -592,25 +648,28 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     }
 
     // 赎回股权付款
-    function redeemRemainPayment() public {
+    function redeemRemainPayment(uint256[] memory tokenIdList) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.FAILED, "not FAILED status");
-
-        // 查看nft 资产
-        uint256 balance = NFT.balanceOf(_msgSender(), shareToken);
-        require(balance > 0, "Insufficient balance");
-        // 查看余额
-        // 铸造nft
-        NFT.burn(_msgSender(), shareToken, balance);
-        // 铸造nft
-        usdt.safeTransfer(_msgSender(), balance * shareType.remainSharePrice);
-        // 打钱
-
-        emit redeemRemainPaymentLog(
-            shareToken,
-            balance,
-            balance * shareType.remainSharePrice
+        require(
+            tokenIdList.length <= 10 && tokenIdList.length > 0,
+            "not FAILED status"
         );
+        for (uint i = 0; i < tokenIdList.length; i++) {
+            require(
+                receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
+                "Insufficient balance"
+            ); // 不是nft  所有者
+            // 查看余额
+            receiptNFT.burn(tokenIdList[i]);
+
+            // 打钱
+            emit redeemRemainPaymentLog(
+                tokenIdList[i],
+                shareType.remainSharePrice
+            );
+        }
+        usdt.safeTransfer(_msgSender(), shareType.remainSharePrice);
     }
 
     // 领取剩余的货款
@@ -786,19 +845,7 @@ contract Financing is AccessControl, Ownable, Pausable, ReentrancyGuard {
     // 项目失败后撤资
     function failDivestment() public whenNotPaused nonReentrant {}
 
-    function pause() public whenNotPaused onlyOwner {
-        _pause();
-    }
-
-    function unpause() public whenPaused onlyOwner {
-        _unpause();
-    }
-
     function getChoice() public view returns (ActionChoices) {
         return schedule;
-    }
-
-    function setSaleIsActive(bool newState_) public onlyOwner {
-        saleIsActive = newState_;
     }
 }

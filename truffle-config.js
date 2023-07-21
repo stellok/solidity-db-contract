@@ -41,7 +41,7 @@
  * https://trufflesuite.com/docs/truffle/getting-started/using-the-truffle-dashboard/
  */
 
-// require('dotenv').config();
+require('dotenv').config();
 // const { MNEMONIC, PROJECT_ID } = process.env;
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
@@ -56,9 +56,6 @@ module.exports = {
      *
      * $ truffle test --network <network-name>
      */
-    plugins: [
-        "@chainsafe/truffle-plugin-abigen"
-    ],
 
     networks: {
         // Useful for testing. The `development` name is special - truffle uses it by default
@@ -131,7 +128,7 @@ module.exports = {
                     enabled: true,
                     runs: 200
                 },
-                evmVersion: "byzantium"
+                evmVersion: "constantinople"
             }
         }
     },

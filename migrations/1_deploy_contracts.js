@@ -1,7 +1,7 @@
 const Bidding = artifacts.require("Bidding");
 const USDT = artifacts.require("Usdt");
 const Financing = artifacts.require("Financing");
-const NFTImpl = artifacts.require("ERC1155SImpl");
+const NFTImpl = artifacts.require("NFT721Impl");
 
 const Web3 = require('web3');
 
@@ -39,17 +39,7 @@ module.exports = async function (deployer, network, accounts) {
     console.log(`bidding contract : ${bidContract.address}`)
 
 
-    //deploy nft
-    //string memory uri_, IERC20 usdtContract_, address owner_, uint256 feePoint_, address feeAddress_
-    await deployer.deploy(NFTImpl,
-        'https://www.google.com',
-        usdt,
-        accounts[0],
-        web3.utils.toWei('0.1', 'ether'),
-        accounts[1],
-    )
-    const nft = await NFTImpl.deployed();
-    console.log(`nft address ${nft.address}`)
+
     // IERC20 usdtAddr_,
     // IBidding bidding_,     //  招投标合约
     // address platformFeeAddr_,
@@ -97,8 +87,8 @@ module.exports = async function (deployer, network, accounts) {
     //     uint256 remainSharePrice; // 补缴股价
     // }
 
-    //  shareList[shareType.sharePrice] == shareList[shareType.stakeSharePrice] +shareList[shareType.firstSharePrice] +shareList[shareType. remainSharePrice]
-    //  shareList[shareType.totalShare] == shareList[shareType.financingShare] +shareList[shareType.founderShare] + shareList[shareType.platformShare]
+    //  shareType.sharePrice] == shareList[shareType.stakeSharePrice] +shareList[shareType.firstSharePrice] +shareList[shareType. remainSharePrice
+    //  shareType.totalShare] == shareList[shareType.financingShare] +shareList[shareType.founderShare] + shareList[shareType.platformShare
 
     const addrList_7 = ['0xf5A0f43a89f6F6D467a2a4e98eC3f35aBcf655B5', accounts[2], accounts[3], accounts[4], accounts[5], accounts[6], accounts[7]]
     //deploy Financing
@@ -111,6 +101,8 @@ module.exports = async function (deployer, network, accounts) {
         addrList_7,                                                          // []addrList_7
         [1, 864000, 4, 5, 6, 7, 8, 9, 10],                                        // []limitTimeList_9
         [10000, 1000, 2000, 7000, 24, 7, 8, 9],                              // []shareList_8
+        "https://www.google.com",
+        "https://www.google.com",
     )
 
     const FinancingContract = await Financing.deployed()
@@ -118,6 +110,22 @@ module.exports = async function (deployer, network, accounts) {
     const share = await FinancingContract.shareType()
     console.log(`share ${JSON.stringify(share)}`)
 
-    const result = await FinancingContract.SetNft(nft.address)
-    console.log(`setNFT ${JSON.stringify(result.receipt.status)}`)
+    const receiptNFT = await FinancingContract.receiptNFT()
+    const shareNFT = await FinancingContract.shareNFT()
+    const u = await FinancingContract.usdt()
+    console.log(`receiptNFT: ${receiptNFT} shareNFT: ${shareNFT}`)
+
+    //deploy nft
+    //string memory uri_, IERC20 usdtContract_, address owner_, uint256 feePoint_, address feeAddress_
+    // await deployer.deploy(NFTImpl,
+    //     'https://www.google.com',
+    //     usdt,
+    //     FinancingContract.address,
+    //     web3.utils.toWei('0.1', 'ether'),
+    //     accounts[1],
+    // )
+    // const nft = await NFTImpl.deployed();
+    // console.log(`nft address ${nft.address}`)
+    // const result = await FinancingContract.SetNft(nft.address)
+    // console.log(`setNFT ${JSON.stringify(result.receipt.status)}`)
 };

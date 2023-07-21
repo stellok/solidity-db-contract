@@ -79,6 +79,8 @@ contract("FinancingTest-whilepay", (accounts) => {
 
         const result = await financing.whiteListPayment({ from: user })
         tools.printfLogs(result)
+
+        
     })
 
 

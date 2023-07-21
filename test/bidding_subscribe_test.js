@@ -2,6 +2,7 @@ const Web3 = require('web3');
 const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const ethers = require("ethers");
+var tools = require('../tools/web3-utils');
 
 contract("BiddingTest-subscribe", (accounts) => {
     let user = accounts[4]
@@ -67,6 +68,7 @@ contract("BiddingTest-subscribe", (accounts) => {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
 
+        Date().Add()
         let expire = 1689753919
 
         //sign message
