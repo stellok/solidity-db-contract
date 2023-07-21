@@ -16,7 +16,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
     bytes32 public constant ADMIN = keccak256("ADMIN"); // 管理员
 
-    // bool public saleIsActive;
     uint256 startTime; //  开始时间  设置 minerStake
     uint256 public totalSold;
 
@@ -188,7 +187,13 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(miner[_msgSender()].exist == false, "participated"); // 参与过了
 
         bytes32 msgSplice = keccak256(
-            abi.encodePacked(_msgSender(), signType.minerStake, amount, expire)
+            abi.encodePacked(
+                _msgSender(),
+                amount,
+                expire,
+                address(this),
+                "6b9119e6"
+            )
         );
 
         _checkRole(
@@ -213,7 +218,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         ); //
 
         bytes32 msgSplice = keccak256(
-            abi.encodePacked(_msgSender(), signType.unMinerStake, expire)
+            abi.encodePacked(_msgSender(), expire, address(this), "94e7629a")
         );
         _checkRole(
             PLATFORM,
@@ -288,7 +293,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(user[_msgSender()].unStake == false, "company  does not exist"); //
 
         bytes32 msgSplice = keccak256(
-            abi.encodePacked(_msgSender(), signType.unSubscribe, expire)
+            abi.encodePacked(_msgSender(), expire, address(this), "dfb08b8d")
         );
         _checkRole(
             PLATFORM,
@@ -319,9 +324,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 _msgSender(),
-                signType.minerStake,
                 stakeAmount,
-                expire
+                expire,
+                address(this),
+                "bdcc95e1"
             )
         );
 
@@ -358,11 +364,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 _msgSender(),
-                signType.planStake,
                 role,
                 totalAmount,
                 stakeAmount,
-                expire
+                expire,
+                address(this),
+                "ec853128"
             )
         );
         _checkRole(
