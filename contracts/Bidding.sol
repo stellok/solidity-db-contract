@@ -14,7 +14,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
-    bytes32 public constant ADMIN = keccak256("ADMIN"); // 管理员
+    bytes32 public constant ADMIN = keccak256("ADMIN"); // 平台
+    bytes32 public constant OWNER = keccak256("OWNER"); //
 
     uint256 startTime; //  开始时间  设置 minerStake
     uint256 public totalSold;
@@ -31,7 +32,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     struct minerStakeInfo {
         uint256 amount; // 股数
         uint256 stakeAmount; // 退回
-        bool unIntentMoney; // 退回
+        uint256 nonce; // 退回 ++
         bool unStake; // 退回
         bool exist; // 存在
     }
@@ -85,7 +86,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     uint256 subscribeTime; // 认购时间
     uint256 subscribeLimitTime; // 限时
     uint256 minerStakeLimitTime; // 矿工质押限时
-    uint256 companyStakeLimitTime; // 限时
 
     //  创始人质押
     event payServiceFeeLog(
@@ -118,13 +118,15 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         IERC20 usdtAddr_,
         address founderAddr_,
         address adminAddr_, //  owner
+        address owner_, //  owner
         uint256 service_,
         uint256 ddFee_,
         address ddAddr_,
         address platformFeeAddr_
     ) {
         // _transferOwnership(owner_);
-        _setRoleAdmin(PLATFORM, ADMIN);
+        _setRoleAdmin(PLATFORM, OWNER);
+//        _setRoleAdmin(PLATFORM, ADMIN);
         _setupRole(PLATFORM, _msgSender());
         _setupRole(ADMIN, adminAddr_);
 
@@ -167,12 +169,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     // 退回尽调费
     function refundDDFee() public onlyRole(ADMIN) {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(_msgSender() == founderAddr, "user does not have permission"); // 创始人
-        require(isfDdFee == true, "user does not have permission"); // 创始人
+        require(isfDdFee == true, "user does not have permission");
         isfDdFee = false;
 
-        usdt.safeTransfer(_msgSender(), ddFee); // 缴给
+        usdt.safeTransfer(founderAddr, ddFee);
         emit payDDFeeLog(founderAddr, ddFee, block.timestamp);
     }
 
@@ -208,9 +208,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //    退款矿工质押
-    function unMinerIntentMoney(uint256 expire, bytes memory signature) public {
+    function unMinerIntentMoney(uint256 expire,uint256 amount, uint256 nonce, bytes memory signature) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(miner[_msgSender()].exist == true, "miner  does not exist"); //   用户不存在
+        require(miner[_msgSender()].nonce  ==  nonce, "nonce invalid"); //   无效
+        require(miner[_msgSender()].amount  >=  amount && amount > 0, "amount invalid"); //   无效
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(
             miner[_msgSender()].unIntentMoney == false,
@@ -218,14 +220,15 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         ); //
 
         bytes32 msgSplice = keccak256(
-            abi.encodePacked(_msgSender(), expire, address(this), "94e7629a")
+            abi.encodePacked(_msgSender(), expire,amount, nonce, address(this), "94e7629a")
         );
         _checkRole(
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
 
-        miner[_msgSender()].unIntentMoney = true;
+        miner[_msgSender()].amount -= amount;
+        miner[_msgSender()].nonce += 1;
         usdt.safeTransfer(_msgSender(), miner[_msgSender()].amount);
         emit unMinerStakeLog(
             _msgSender(),
@@ -319,7 +322,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(miner[_msgSender()].exist == true, "participated"); // 参与过了
         require(stakeAmount > miner[_msgSender()].amount, "participated"); // 参与过了
-        require(miner[_msgSender()].unIntentMoney == false, "participated"); // 退回质押金不能参与
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
@@ -356,7 +358,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(
-            expire + companyStakeLimitTime > block.timestamp,
+            expire  > block.timestamp,
             "not yet expired"
         ); // 还没到期
         require(companyList[role].exist == false, "participated"); // 参与过了
@@ -385,23 +387,26 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
     }
 
-    //    退款矿工质押
+    //    退款方案方质押
     function unPlanStake(
-        companyType role,
-        address addr
+        companyType role
     ) public onlyRole(ADMIN) {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(companyList[role].exist == true, "company  does not exist"); //   用户不存在
-        require(companyList[role].unStake == false, "company  does not exist"); //
+        require(companyList[role].unStake == false, "cannot be repeated unStake");
 
         companyList[role].unStake = true;
-        usdt.safeTransfer(addr, companyList[role].stakeAmount);
+        usdt.safeTransfer(companyList[role].addr, companyList[role].stakeAmount);
         emit minerStakeLog(
-            addr,
+            companyList[role].addr,
             companyList[role].stakeAmount,
             block.timestamp
         );
     }
+
+
+    // todo 返回质押  minerStake
+    //ToDo 领取罚没
+
 
     // 查看认缴金额
     function viewSubscribe(address account) public view returns (uint256) {
@@ -416,8 +421,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         _unpause();
     }
 
+    function payDD() public onlyRole(ADMIN) {
+        usdt.safeTransfer(platformFeeAddr, ddFee);
+    }
     // 紧急提现
-    function withdraw(uint256 amount, address addr) public onlyRole(ADMIN) {
+    function withdraw(uint256 amount, address addr) public onlyRole(OWNER) {
         usdt.safeTransfer(addr, amount);
     }
 
