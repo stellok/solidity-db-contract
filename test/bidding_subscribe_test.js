@@ -23,8 +23,11 @@ contract("BiddingTest-subscribe", (accounts) => {
         // uint256 stakeSharePrice_,
         // uint256 subscribeTime_,
         // uint256 subscribeLimitTime_
-        let subBegin = await bid.startSubscribe(10000, 20, 1689581119, 1689753919);
+        const financingShare_ = web3.utils.toWei('10000', 'ether')
+        const stakeSharePrice_ = web3.utils.toWei('20', 'ether')
+        let subBegin = await bid.startSubscribe(financingShare_, stakeSharePrice_, 1689581119, 1689753919);
         assert.equal(subBegin.receipt.status, true, "startSubscribe failed !");
+        
     });
 
     it("testing subscribe() should assert true", async function () {
@@ -58,9 +61,9 @@ contract("BiddingTest-subscribe", (accounts) => {
 
         console.log(`after totalSold = ${totalSold1}`)
 
-        
 
-        console.log(`logs: ${JSON.stringify(sub.receipt.logs,null,3)}`)
+
+        console.log(`logs: ${JSON.stringify(sub.receipt.logs, null, 3)}`)
     });
 
     it("testing unSubscribe() should assert true", async function () {
@@ -72,7 +75,7 @@ contract("BiddingTest-subscribe", (accounts) => {
         let expire = 1689753919
 
         //sign message
-        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256"], [user, 1, expire])
+        let digest = ethers.solidityPackedKeccak256(["address", "uint256", "address", "string"], [user, expire, bid.address, tools.getsignature(bid, 'unSubscribe')])
         console.log(`digest : ${digest}`)
 
         console.log(`owner ${accounts[0]}`)
@@ -94,6 +97,6 @@ contract("BiddingTest-subscribe", (accounts) => {
 
         console.log(`after totalSold = ${totalSold1}`)
 
-        console.log(`logs: ${JSON.stringify(sub.receipt.logs,null,3)}`)
+        console.log(`logs: ${JSON.stringify(sub.receipt.logs, null, 3)}`)
     });
 })

@@ -2,6 +2,7 @@ const Web3 = require('web3');
 const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const ethers = require("ethers");
+const tools = require('../tools/web3-utils');
 
 contract("BiddingTest-paydd", (accounts) => {
 
@@ -22,7 +23,7 @@ contract("BiddingTest-paydd", (accounts) => {
 
     it("testing payDDFee() should assert true", async function () {
 
-        
+
 
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
@@ -36,7 +37,7 @@ contract("BiddingTest-paydd", (accounts) => {
         const isddFee = await bid.isfDdFee()
         expect(isddFee).to.equal(false)
 
-        
+
         // console.log(`approve ${JSON.stringify(resultApprove.receipt)}`)
         let result = await bid.payDDFee();
         assert.equal(result.receipt.status, true, "payDDFee failed !");
@@ -63,11 +64,7 @@ contract("BiddingTest-paydd", (accounts) => {
         let result = await bid.refundDDFee();
         assert.equal(result.receipt.status, true, "refundDDFee failed !");
 
-        // console.log(`result ${result.receipt}`)
-        let balanceOf = await usdt.balanceOf(bid.address);
-        console.log(`balanceOf usdt bid contract ${balanceOf}`)
-
-        assert.equal(balanceOf.toString(), '0', "balanceOf must == 0");
+        await tools.AssertUSDT(usdt.address, bid.address, '0')
 
     });
 

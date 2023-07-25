@@ -48,7 +48,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         FAILED // 失败
     }
 
-    ActionChoices schedule;
+    ActionChoices public schedule;
 
     struct AddrType {
         address builderAddr; // 建造人
@@ -272,8 +272,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             "share verification failed"
         );
 
-        address receiptAddr = deployNFT("DB", "DB", address(this));
-        address shareAddr = deployNFT("DB1", "DB1", address(this));
+        address receiptAddr = deployNFT("DB", "DB");
+        address shareAddr = deployNFT("shareNFT", "shareNFT");
 
         receiptNFT = NFT721Impl(receiptAddr);
         receiptNFT.setBaseURI(uri_1);
@@ -288,14 +288,13 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
     function deployNFT(
         string memory name_,
-        string memory symbol_,
-        address owner_
+        string memory symbol_
     ) public returns (address) {
         bytes memory bytecode = type(NFT721Impl).creationCode;
 
         bytes memory initCode = abi.encodePacked(
             bytecode,
-            abi.encode(name_, symbol_, owner_)
+            abi.encode(name_, symbol_)
         );
 
         bytes32 shareSalt = keccak256(abi.encodePacked(address(this), "share"));
@@ -388,8 +387,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 公售
-    //TODO check 30%
-    //TODO
     // @param amount_股数
     function publicSale(uint256 amount_) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
@@ -409,22 +406,23 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 block.timestamp,
             "time expired"
         );
+        require(
+            shareType.firstSharePrice > shareType.stakeSharePrice,
+            "firstSharePrice > stakeSharePrice"
+        );
 
         if (shareType.financingShare - publicSaleTotalSold < amount_) {
             amount_ = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount_;
+        uint256 mAmount = amount_ *
+            (shareType.firstSharePrice - shareType.stakeSharePrice);
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
-            amount_ * (shareType.firstSharePrice - shareType.stakeSharePrice)
+            mAmount //
         );
-        emit publicSaleLog(
-            _msgSender(),
-            amount_,
-            amount_ * (shareType.firstSharePrice - shareType.stakeSharePrice),
-            block.timestamp
-        );
+        emit publicSaleLog(_msgSender(), amount_, mAmount, block.timestamp);
 
         // 铸造nft
         receiptNFT.mint(_msgSender(), amount_);

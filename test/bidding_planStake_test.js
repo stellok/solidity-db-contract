@@ -56,7 +56,7 @@ contract("BiddingTest-planStake", (accounts) => {
 
 
         //sign message
-        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256", "uint256","address", "string"], [user, role, totalAmount, stakeAmount, expire,bid.address])
+        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256", "uint256","address", "string"], [user, role, totalAmount, stakeAmount, expire,bid.address, tools.getsignature(bid, 'planStake')])
         console.log(`digest : ${digest}`)
 
         console.log(`owner ${accounts[0]}`)

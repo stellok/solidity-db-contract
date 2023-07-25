@@ -49,14 +49,15 @@ contract NFT721Impl is
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
     event mintLog(address account, uint256 amount);
+    event Log(uint256 amount);
+    event nftlog(address account);
 
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
      */
-    constructor(string memory name_, string memory symbol_, address owner_) {
+    constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
-        _transferOwnership(owner_);
     }
 
     function pause() public whenNotPaused onlyOwner {
@@ -83,7 +84,8 @@ contract NFT721Impl is
 
     //   onlyOwner
     function mint(address account, uint256 amount) public onlyOwner {
-        for (uint i = 0; i > amount; i++) {
+        emit nftlog(_msgSender());
+        for (uint i = 0; i < amount; i++) {
             currentTokenId += 1;
             _mint(account, currentTokenId);
             emit mintLog(account, currentTokenId);

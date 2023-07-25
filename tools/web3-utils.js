@@ -1,7 +1,9 @@
+const BN = require('bn.js');
+const USDTTest = artifacts.require("Usdt");
 
 module.exports = {
     printfLogs: function (params) {
-        console.log(`logs: ${JSON.stringify(params.receipt.logs, null, 3)}`)
+        console.log(`logs: ${JSON.stringify(params.receipt, null, 3)}`)
     },
     timeout: function (ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -15,7 +17,32 @@ module.exports = {
             }
             // console.log(`name ${abi.name} signature ${abi.signature}`)
         }
+    },
+    mul: async function (contract, value) {
+        const decimals = await contract.decimals()
+        return new BN(10).
+            pow(
+                new BN(decimals)
+            ).mul(
+                new BN(value)
+            )
+    },
+
+    toBN: function (valuue) {
+        return new BN(valuue)
+    },
+
+    toUSDT: async function (value) {
+        const decimals = await contract.decimals()
+        return this.toBN(value).div(decimals)
+    },
+
+    AssertUSDT: async function (contract, address, expectBalance) {
+        const usdt = await USDTTest.at(contract)
+        const usdtBalance = await usdt.balanceOf(address);
+        assert.equal(usdtBalance, expectBalance.toString(), `${usdtBalance} != expectBalance ${expectBalance}`);
     }
+
 }
 
 
