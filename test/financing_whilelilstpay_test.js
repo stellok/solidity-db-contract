@@ -30,8 +30,8 @@ contract("FinancingTest-whilepay", (accounts) => {
         // uint256 stakeSharePrice_,
         // uint256 subscribeTime_,
         // uint256 subscribeLimitTime_
-        const financingShare_ = await tools.USDTToWei(usdt, '10000')
-        const stakeSharePrice_ = await tools.USDTToWei(usdt, '100')
+        const financingShare_ = await tools.USDTToWei(usdt, '1000')
+        const stakeSharePrice_ = await tools.USDTToWei(usdt, '7')
         let subBegin = await bid.startSubscribe(financingShare_, stakeSharePrice_, 1689581119, 1689753919);
         assert.equal(subBegin.receipt.status, true, "startSubscribe failed !");
     });
@@ -147,10 +147,11 @@ contract("FinancingTest-whilepay", (accounts) => {
         console.log(`final ${financing.address}`)
         expect(balance.toString()).to.equal('20')
 
-        const ownner =  await nft.ownerOf(receiptNFT,1)
-        expect(ownner).to.equal(user)
-
-
+        for (let index = 1; index <= balance.toNumber(); index++) {
+            const ownner =  await nft.ownerOf(receiptNFT,1)
+            expect(ownner).to.equal(user)     
+        }
+        
     })
 
 })

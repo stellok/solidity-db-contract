@@ -7,13 +7,13 @@ const BN = require('bn.js');
 
 module.exports = async function (deployer, network, accounts) {
 
-    await deployer.deploy(NFTImpl,'DB-a','DB-a')
+    await deployer.deploy(NFTImpl, 'DB-a', 'DB-a')
 
     let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
-    if (network === 'development'||network === 'mumbai'|| network==='myR') {
+    if (network === 'development' || network === 'mumbai' || network === 'myR') {
         //deployment usdt
         const init = new BN(10).pow(new BN(18)).mul(new BN('10000000000'))
-        await deployer.deploy(USDT,init );
+        await deployer.deploy(USDT, init);
         //access information about your deployed contract instance
         const usdtContract = await USDT.deployed();
         console.log(`USDT contract : ${usdtContract.address}`)
@@ -137,6 +137,12 @@ module.exports = async function (deployer, network, accounts) {
     // console.log(tx)
 
     const FinancingContract = await Financing.deployed()
+
+    //setFinancing
+    const bResult = await bidContract.setFinancing(FinancingContract.address)
+    if (!bResult.receipt.status) {
+        console.log('setFinancing failed !')
+    }
 
     console.log(`FinancingContract : ${FinancingContract.address}`)
     const share = await FinancingContract.shareType()

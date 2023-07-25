@@ -7,10 +7,12 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 // 招标合约
 contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using Address for address;
 
     bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
     bytes32 public constant ADMIN = keccak256("ADMIN"); // 平台
@@ -21,6 +23,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     uint256 public financingShare; // 融资融资股
     uint256 public stakeSharePrice; // 质押股价
+    address private financAddr;
 
     struct userStakeInfo {
         uint256 amount; // 股数
@@ -85,6 +88,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     uint256 subscribeTime; // 认购时间
     uint256 subscribeLimitTime; // 限时
     uint256 minerStakeLimitTime; // 矿工质押限时
+    uint256 public constant maxNftAMOUNT = 10;
 
     //  创始人质押
     event payServiceFeeLog(
@@ -136,7 +140,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
         startTime = block.timestamp;
         usdt = usdtAddr_;
-
         platformFeeAddr = platformFeeAddr_;
     }
 
@@ -264,7 +267,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         subscribeLimitTime = subscribeLimitTime_;
     }
 
-    // TODO Fix
     // @param stock 认购数
     // @param amount 5% stake
     function subscribe(uint256 stock) public {
@@ -272,6 +274,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(stock > 0, "cannot be less than zero");
         require(financingShare * 2 > totalSold, "sold out"); // 售完
         require(subscribeTime > 0, "UnStart subscribe"); //  未开启
+        require(stock <= maxNftAMOUNT, "stock > 10");
 
         require(
             subscribeTime + subscribeLimitTime > block.timestamp,
@@ -413,12 +416,21 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
+    function transferAmount(uint256 amount) public {
+        require(financAddr != address(0), "address is null");
+        require(_msgSender() == financAddr, "only invoke by owner");
+        usdt.transfer(financAddr, amount);
+    }
+
+    function setFinancing(address addr) public onlyRole(PLATFORM) {
+        require(addr.isContract(), "addr must Contract address");
+        financAddr = addr;
+    }
+
     // todo 返回质押  minerStake
     function IntentMoneyAmount(address account) public view returns (uint256) {
         return miner[account].amount;
     }
-
-    //ToDo 领取罚没
 
     // 查看认缴金额
     function viewSubscribe(address account) public view returns (uint256) {
