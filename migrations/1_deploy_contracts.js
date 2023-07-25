@@ -3,15 +3,17 @@ const USDT = artifacts.require("Usdt");
 const Financing = artifacts.require("Financing");
 const NFTImpl = artifacts.require("NFT721Impl");
 const tools = require('../tools/web3-utils');
+const BN = require('bn.js');
 
 module.exports = async function (deployer, network, accounts) {
 
-    await deployer.deploy(NFTImpl,'DB-a','DB-a','0xed269cACd679309FAC6132F2A773B3d49535Dc87')
+    await deployer.deploy(NFTImpl,'DB-a','DB-a')
 
     let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
     if (network === 'development'||network === 'mumbai'|| network==='myR') {
         //deployment usdt
-        await deployer.deploy(USDT, web3.utils.toWei('10000000000', 'ether'));
+        const init = new BN(10).pow(new BN(18)).mul(new BN('10000000000'))
+        await deployer.deploy(USDT,init );
         //access information about your deployed contract instance
         const usdtContract = await USDT.deployed();
         console.log(`USDT contract : ${usdtContract.address}`)
@@ -97,26 +99,26 @@ module.exports = async function (deployer, network, accounts) {
     const addrList_7 = ['0xf5A0f43a89f6F6D467a2a4e98eC3f35aBcf655B5', accounts[2], accounts[3], accounts[4], accounts[5], accounts[6], accounts[7]]
 
     //2, 3, 4, 5, 6, 7, 8, 9, 22, 33
-    const firstBuildFee = await tools.mul(usdtc, '2')
-    const remainBuildFee = await tools.mul(usdtc, '3')
-    const operationsFee = await tools.mul(usdtc, '4')
-    const electrFee = await tools.mul(usdtc, '5')
-    const electrStakeFee = await tools.mul(usdtc, '6')
-    const buildInsuranceFee = await tools.mul(usdtc, '7')
-    const insuranceFee = await tools.mul(usdtc, '8')
-    const spvFee = await tools.mul(usdtc, '9')
-    const publicSalePlatformFee = await tools.mul(usdtc, '22')
-    const remainPlatformFee = await tools.mul(usdtc, '33')
+    const firstBuildFee = await tools.USDTToWei(usdtc, '2')
+    const remainBuildFee = await tools.USDTToWei(usdtc, '3')
+    const operationsFee = await tools.USDTToWei(usdtc, '4')
+    const electrFee = await tools.USDTToWei(usdtc, '5')
+    const electrStakeFee = await tools.USDTToWei(usdtc, '6')
+    const buildInsuranceFee = await tools.USDTToWei(usdtc, '7')
+    const insuranceFee = await tools.USDTToWei(usdtc, '8')
+    const spvFee = await tools.USDTToWei(usdtc, '9')
+    const publicSalePlatformFee = await tools.USDTToWei(usdtc, '22')
+    const remainPlatformFee = await tools.USDTToWei(usdtc, '33')
 
 
-    const totalShare = await tools.mul(usdtc, '10000')
-    const financingShare = await tools.mul(usdtc, '1000')
-    const founderShare = await tools.mul(usdtc, '2000')
-    const platformShare = await tools.mul(usdtc, '7000')
-    const sharePrice = await tools.mul(usdtc, '24')
-    const stakeSharePrice = await tools.mul(usdtc, '7')
-    const firstSharePrice = await tools.mul(usdtc, '8')
-    const remainSharePrice = await tools.mul(usdtc, '9')
+    const totalShare = await tools.USDTToWei(usdtc, '10000')
+    const financingShare = await tools.USDTToWei(usdtc, '1000')
+    const founderShare = await tools.USDTToWei(usdtc, '2000')
+    const platformShare = await tools.USDTToWei(usdtc, '7000')
+    const sharePrice = await tools.USDTToWei(usdtc, '24')
+    const stakeSharePrice = await tools.USDTToWei(usdtc, '7')
+    const firstSharePrice = await tools.USDTToWei(usdtc, '8')
+    const remainSharePrice = await tools.USDTToWei(usdtc, '9')
 
     //deploy Financing
     const tx = await deployer.deploy(Financing,

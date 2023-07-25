@@ -3,7 +3,6 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -118,7 +117,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         IERC20 usdtAddr_,
         address founderAddr_,
         address adminAddr_, //  owner
-        address owner_, //  owner
         uint256 service_,
         uint256 ddFee_,
         address ddAddr_,
@@ -126,7 +124,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) {
         // _transferOwnership(owner_);
         _setRoleAdmin(PLATFORM, OWNER);
-//        _setRoleAdmin(PLATFORM, ADMIN);
+        //        _setRoleAdmin(PLATFORM, ADMIN);
         _setupRole(PLATFORM, _msgSender());
         _setupRole(ADMIN, adminAddr_);
 
@@ -188,11 +186,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
+                address(this),
+                "6b9119e6",
                 _msgSender(),
                 amount,
-                expire,
-                address(this),
-                "6b9119e6"
+                expire
             )
         );
 
@@ -208,19 +206,30 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //    退款矿工质押
-    function unMinerIntentMoney(uint256 expire,uint256 amount, uint256 nonce, bytes memory signature) public {
+    function unMinerIntentMoney(
+        uint256 expire,
+        uint256 amount,
+        uint256 nonce,
+        bytes memory signature
+    ) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(miner[_msgSender()].exist == true, "miner  does not exist"); //   用户不存在
-        require(miner[_msgSender()].nonce  ==  nonce, "nonce invalid"); //   无效
-        require(miner[_msgSender()].amount  >=  amount && amount > 0, "amount invalid"); //   无效
-        require(expire > block.timestamp, "not yet expired"); // 还没到期
+        require(miner[_msgSender()].nonce == nonce, "nonce invalid"); //   无效
         require(
-            miner[_msgSender()].unIntentMoney == false,
-            "miner  does not exist"
-        ); //
+            miner[_msgSender()].amount >= amount && amount > 0,
+            "amount invalid"
+        ); //   无效
+        require(expire > block.timestamp, "not yet expired"); // 还没到期
 
         bytes32 msgSplice = keccak256(
-            abi.encodePacked(_msgSender(), expire,amount, nonce, address(this), "94e7629a")
+            abi.encodePacked(
+                address(this),
+                "b13c8aa8",
+                _msgSender(),
+                expire,
+                amount,
+                nonce
+            )
         );
         _checkRole(
             PLATFORM,
@@ -325,11 +334,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
+                address(this),
+                "bdcc95e1",
                 _msgSender(),
                 stakeAmount,
-                expire,
-                address(this),
-                "bdcc95e1"
+                expire
             )
         );
 
@@ -357,21 +366,18 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes memory signature
     ) public {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        require(
-            expire  > block.timestamp,
-            "not yet expired"
-        ); // 还没到期
+        require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(companyList[role].exist == false, "participated"); // 参与过了
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
+                address(this),
+                "ec853128",
                 _msgSender(),
                 role,
                 totalAmount,
                 stakeAmount,
-                expire,
-                address(this),
-                "ec853128"
+                expire
             )
         );
         _checkRole(
@@ -388,14 +394,18 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //    退款方案方质押
-    function unPlanStake(
-        companyType role
-    ) public onlyRole(ADMIN) {
+    function unPlanStake(companyType role) public onlyRole(ADMIN) {
         require(companyList[role].exist == true, "company  does not exist"); //   用户不存在
-        require(companyList[role].unStake == false, "cannot be repeated unStake");
+        require(
+            companyList[role].unStake == false,
+            "cannot be repeated unStake"
+        );
 
         companyList[role].unStake = true;
-        usdt.safeTransfer(companyList[role].addr, companyList[role].stakeAmount);
+        usdt.safeTransfer(
+            companyList[role].addr,
+            companyList[role].stakeAmount
+        );
         emit minerStakeLog(
             companyList[role].addr,
             companyList[role].stakeAmount,
@@ -403,10 +413,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-
     // todo 返回质押  minerStake
-    //ToDo 领取罚没
+    function IntentMoneyAmount(address account) public view returns (uint256) {
+        return miner[account].amount;
+    }
 
+    //ToDo 领取罚没
 
     // 查看认缴金额
     function viewSubscribe(address account) public view returns (uint256) {
@@ -424,6 +436,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     function payDD() public onlyRole(ADMIN) {
         usdt.safeTransfer(platformFeeAddr, ddFee);
     }
+
     // 紧急提现
     function withdraw(uint256 amount, address addr) public onlyRole(OWNER) {
         usdt.safeTransfer(addr, amount);

@@ -19,7 +19,8 @@ contract("FinancingTest-whilepay", (accounts) => {
 
         //transfer usdt
         console.log(`\n using account ${user} as user ! `)
-        const result = await usdt.transfer(user, web3.utils.toWei('100000', 'ether'))
+        const amount = await tools.USDTToWei(usdt, '100000')
+        const result = await usdt.transfer(user, amount)
         assert.equal(result.receipt.status, true, "transfer usdt failed !");
         const balance = await usdt.balanceOf(user)
         console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
@@ -29,8 +30,8 @@ contract("FinancingTest-whilepay", (accounts) => {
         // uint256 stakeSharePrice_,
         // uint256 subscribeTime_,
         // uint256 subscribeLimitTime_
-        const financingShare_ = await tools.mul(usdt, '10000')
-        const stakeSharePrice_ = await tools.mul(usdt, '100')
+        const financingShare_ = await tools.USDTToWei(usdt, '10000')
+        const stakeSharePrice_ = await tools.USDTToWei(usdt, '100')
         let subBegin = await bid.startSubscribe(financingShare_, stakeSharePrice_, 1689581119, 1689753919);
         assert.equal(subBegin.receipt.status, true, "startSubscribe failed !");
     });

@@ -13,7 +13,8 @@ contract("BiddingTest-subscribe", (accounts) => {
 
         //transfer usdt
         console.log(`\n using account ${user} as user ! `)
-        const result = await usdt.transfer(user, web3.utils.toWei('100000', 'ether'))
+        const amount = await tools.USDTToWei(usdt, '100000')
+        const result = await usdt.transfer(user,amount)
         assert.equal(result.receipt.status, true, "transfer usdt failed !");
         const balance = await usdt.balanceOf(user)
         console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
@@ -71,7 +72,7 @@ contract("BiddingTest-subscribe", (accounts) => {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
 
-        Date().Add()
+        // Date().Add()
         let expire = 1689753919
 
         //sign message

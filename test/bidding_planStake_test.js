@@ -40,7 +40,8 @@ contract("BiddingTest-planStake", (accounts) => {
 
         //transfer usdt
         console.log(`\n using account ${user} as user ! `)
-        const result = await usdt.transfer(user, web3.utils.toWei('100000', 'ether'))
+        const amount = await tools.USDTToWei(usdt, '100000')
+        const result = await usdt.transfer(user, amount)
         assert.equal(result.receipt.status, true, "transfer usdt failed !");
         const balance = await usdt.balanceOf(user)
         console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
@@ -52,11 +53,11 @@ contract("BiddingTest-planStake", (accounts) => {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
 
-        let expire = 1689753919
+        let expire = 1690616038
 
 
         //sign message
-        let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256", "uint256","address", "string"], [user, role, totalAmount, stakeAmount, expire,bid.address, tools.getsignature(bid, 'planStake')])
+        let digest = ethers.solidityPackedKeccak256(["address", "string","address", "uint8", "uint256", "uint256", "uint256"], [bid.address, tools.getsignature(bid, 'planStake'),user, role, totalAmount, stakeAmount, expire])
         console.log(`digest : ${digest}`)
 
         console.log(`owner ${accounts[0]}`)
@@ -92,9 +93,10 @@ contract("BiddingTest-planStake", (accounts) => {
         const usdt = await USDTTest.deployed();
 
         let origUsdtBalance = await usdt.balanceOf(user);
+
         console.log(`origUsdtBalance : ${web3.utils.fromWei(origUsdtBalance, 'ether')}`)
 
-        let sub = await bid.unPlanStake(role, user, { from: owner })
+        let sub = await bid.unPlanStake(role, { from: owner })
         assert.equal(sub.receipt.status, true, "planStake failed !");
 
         let balanceOf = await usdt.balanceOf(user);

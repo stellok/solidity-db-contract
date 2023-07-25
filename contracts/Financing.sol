@@ -454,6 +454,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
         );
+        require(tokenIdList.length <= maxNftAMOUNT, "tokenIdList lenght >= 10");
 
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(

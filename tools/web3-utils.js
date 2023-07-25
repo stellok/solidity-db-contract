@@ -18,7 +18,7 @@ module.exports = {
             // console.log(`name ${abi.name} signature ${abi.signature}`)
         }
     },
-    mul: async function (contract, value) {
+    USDTToWei: async function (contract, value) {
         const decimals = await contract.decimals()
         return new BN(10).
             pow(
@@ -32,9 +32,12 @@ module.exports = {
         return new BN(valuue)
     },
 
-    toUSDT: async function (value) {
+    USDTFromWei: async function (contract, value) {
         const decimals = await contract.decimals()
-        return this.toBN(value).div(decimals)
+        return this.toBN(value).div(new BN(10).
+        pow(
+            new BN(decimals)
+        ))
     },
 
     AssertUSDT: async function (contract, address, expectBalance) {
