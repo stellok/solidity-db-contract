@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract Dividends {
+contract Dividends is ReentrancyGuard{
 
     using SafeERC20 for IERC20;
     IERC20 public USDT;
@@ -46,7 +47,7 @@ contract Dividends {
     }
 
     // 支付
-    function payment(uint256 amount) public  {
+    function payment(uint256 amount) public nonReentrant  {
         require(amount > 0, "amount cannot be zero");  // 不能为零
 
         USDT.safeTransferFrom(msg.sender, address(this), amount);
@@ -59,7 +60,8 @@ contract Dividends {
     }
 
     // 检查当月分红
-    function doMonthlyTask(uint256 index) public {
+    function doMonthlyTask(uint256 index) public nonReentrant {
+        require(msg.sender == tx.origin, "Refusal to contract transactions");
         require(monthlyList[index] > 0, "amount cannot be zero");  // 不能为零
         require(monthlyList[index] +  30 days < block.timestamp, "no time");  // 没到时间呢
         require(receiveRecord[monthlyList[index]].exist == false, "has been comforted");  // 已经被舒适化
@@ -73,7 +75,7 @@ contract Dividends {
     }
 
     // 领取分红
-    function receiveDividends( uint256 index,uint256[] memory tokenList) public {
+    function receiveDividends( uint256 index,uint256[] memory tokenList) public nonReentrant {
         require(msg.sender == tx.origin, "Refusal to contract transactions");
         require(tokenList.length > 0 , "cannot be zero");
         require( receiveRecord[monthlyList[index]].exist == true, "This month's dividend has not been settled"); // 本月分红还没结算
