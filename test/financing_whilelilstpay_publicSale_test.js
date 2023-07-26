@@ -11,19 +11,13 @@ const nft = require('../tools/nft');
 
 contract("FinancingTest-whilepay", (accounts) => {
 
-    let user = accounts[4]
+    let user = accounts[5]
 
     before(async function () {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
 
-        //transfer usdt
-        console.log(`\n using account ${user} as user ! `)
-        const amount = await tools.USDTToWei(usdt, '100000')
-        const result = await usdt.transfer(user, amount)
-        assert.equal(result.receipt.status, true, "transfer usdt failed !");
-        const balance = await usdt.balanceOf(user)
-        console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
+        await tools.transferUSDT(usdt, accounts[0], user, '1000000')
 
         //startSubscribe 
         // uint256 financingShare_,
@@ -55,6 +49,8 @@ contract("FinancingTest-whilepay", (accounts) => {
 
         let resultApprove = await usdt.approve(bid.address, stakeSharePrice.mul(tools.toBN(stock)), { from: user })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
+
+        await tools.printUSDT(usdt, user)
 
         let sub = await bid.subscribe(10, { from: user })
         assert.equal(sub.receipt.status, true, "subscribe failed !");
@@ -148,10 +144,52 @@ contract("FinancingTest-whilepay", (accounts) => {
         expect(balance.toString()).to.equal('20')
 
         for (let index = 1; index <= balance.toNumber(); index++) {
-            const ownner =  await nft.ownerOf(receiptNFT,1)
-            expect(ownner).to.equal(user)     
+            const ownner = await nft.ownerOf(receiptNFT, 1)
+            expect(ownner).to.equal(user)
         }
-        
+
+        let schedule = await financing.schedule()
+        console.log(`schedule : ${schedule}`)
+
+        const publicSaleTotalSold1 = await financing.publicSaleTotalSold()
+        console.log(`publicSaleTotalSold ${publicSaleTotalSold1} ${share.financingShare}`)
+
+    })
+
+    it("testing claimFirstBuildFee() should assert true", async function () {
+
+
+
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+
+        const platformFeeAddr = await financing.platformFeeAddr()
+        const platformFeeAddrBalanceOf = await tools.balanceOF(usdt.address, platformFeeAddr)
+
+        const tx = await financing.claimFirstBuildFee({ from: accounts[2] });
+        tools.printfLogs(tx)
+
+        const addrType = await financing.addrType()
+        const feeType = await financing.feeType()
+
+        // usdt.safeTransfer(addrType.builderAddr, feeType.firstBuildFee);
+        // // 给平台打钱
+        // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
+        // // 打保险费
+        // usdt.safeTransfer(
+        //     addrType.buildInsuranceAddr,
+        //     feeType.buildInsuranceFee
+        // );
+
+        await tools.AssertUSDT(usdt.address, addrType.builderAddr, feeType.firstBuildFee)
+        await tools.AssertUSDT(usdt.address, platformFeeAddr, platformFeeAddrBalanceOf.add(feeType.publicSalePlatformFee))
+        await tools.AssertUSDT(usdt.address, addrType.buildInsuranceAddr, feeType.buildInsuranceFee)
+    })
+
+    it("testing remainPayment() should assert true", async function () {
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+        // financing.remainPayment()
     })
 
 })

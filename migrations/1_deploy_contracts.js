@@ -95,8 +95,15 @@ module.exports = async function (deployer, network, accounts) {
 
     const usdtc = await USDT.at(usdt)
 
+    const builderAddr = accounts[2]; // 建造人
+    const buildInsuranceAddr = accounts[3]; // 建造保险地址
+    const insuranceAddr = accounts[4]; // 保险提供方
+    const operationsAddr = accounts[2]; // 运维提供方
+    const spvAddr = accounts[2]; // SPV地址
+    const electrStakeAddr = accounts[2]; // 电力质押地址
+    const electrAddr = accounts[2]; // 电力人
 
-    const addrList_7 = ['0xf5A0f43a89f6F6D467a2a4e98eC3f35aBcf655B5', accounts[2], accounts[3], accounts[4], accounts[5], accounts[6], accounts[7]]
+
 
     //2, 3, 4, 5, 6, 7, 8, 9, 22, 33
     const firstBuildFee = await tools.USDTToWei(usdtc, '2')
@@ -111,10 +118,10 @@ module.exports = async function (deployer, network, accounts) {
     const remainPlatformFee = await tools.USDTToWei(usdtc, '33')
 
 
-    const totalShare = await tools.USDTToWei(usdtc, '10000')
-    const financingShare = await tools.USDTToWei(usdtc, '1000')
-    const founderShare = await tools.USDTToWei(usdtc, '2000')
-    const platformShare = await tools.USDTToWei(usdtc, '7000')
+    const totalShare = 9020
+    const financingShare = 20
+    const founderShare = 2000
+    const platformShare = 7000
     const sharePrice = await tools.USDTToWei(usdtc, '24')
     const stakeSharePrice = await tools.USDTToWei(usdtc, '7')
     const firstSharePrice = await tools.USDTToWei(usdtc, '8')
@@ -127,7 +134,7 @@ module.exports = async function (deployer, network, accounts) {
         accounts[0],                                                                                                                                                         // address platformFeeAddr_
         accounts[0],                                                                                                                                                         // address founderAddr_
         [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee],        // []feeList_10
-        addrList_7,                                                                                                                                                          // []addrList_7
+        [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr],                                                              // []addrList_7
         [1, 864000, 4, 5, 6, 7, 8, 9, 10],                                                                                                                                   // []limitTimeList_9
         [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                           // []shareList_8
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",

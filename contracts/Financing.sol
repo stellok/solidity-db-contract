@@ -13,6 +13,7 @@ import "./NFT721Impl.sol";
 interface IBidding {
     //  查看用户状态            // 返回 数量, 状态,
     function viewSubscribe(address) external view returns (uint256);
+
     function transferAmount(uint256 amount) external;
 }
 
@@ -337,11 +338,16 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             amount = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount;
+
+        //TODO
+        // uint256 gAmout = amount * shareType.stakeSharePrice;
+        // bidding.transferAmount(gAmout);
+
         // 同时通知招投标合约释放押金
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
-            amount * shareType.firstSharePrice
+            amount * (shareType.firstSharePrice - shareType.stakeSharePrice)
         );
 
         emit whiteListPaymentLog(
