@@ -217,23 +217,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         require(feeList_.buildInsuranceFee != 0, "buildInsuranceFee == 0"); // 建造保险费
         require(feeList_.insuranceFee != 0, "insuranceFee == 0"); // 保修费
         require(feeList_.spvFee != 0, "spvFee== 0"); // 信托管理费
-        // require(
-        //     feeList_.length == uint256(feeType.remainPlatformFee),
-        //     "feeList_  Insufficient number of parameters"
-        // ); // 参数数量不足
-
-        // require(
-        //     addrList_.length == uint256(addrType.electrAddr),
-        //     "addrList_ Insufficient number of parameters"
-        // ); // 参数数量不足
-        // require(
-        //     limitTimeList_.length == uint256(limitTimeType.spvIntervalTime),
-        //     "Insufficient number of parameters"
-        // ); // 参数数量不足
-        // require(
-        //     shareList_.length == uint256(shareType.remainSharePrice),
-        //     "Insufficient number of parameters"
-        // ); // 参数数量不足
         require(address(usdtAddr_) != address(0), "usdt Can not be empty");
         require(
             platformFeeAddr_ != address(0),
@@ -244,21 +227,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         platformFeeAddr = platformFeeAddr_; //平台收款地址
 
         founderAddr = founderAddr_;
-        // for (uint i = 1; i < feeList_.length; i++) {
-        //     feeType(i)] = feeList_[i;
-        // }
-        // for (uint i = 1; i < addrList_.length; i++) {
-        //     require(addrList_[i] != address(0), "address not zero");
-        //     addrType(i) = addrList_[i];
-        // }
-
-        // for (uint i = 1; i < limitTimeList_.length; i++) {
-        //     limitTimeType(i)] = limitTimeList_[i;
-        // }
-
-        // for (uint i = 1; i < shareList_.length; i++) {
-        //     shareType(i)] = shareList_[i;
-        // }
         require(
             shareType.sharePrice ==
                 shareType.stakeSharePrice +
@@ -314,7 +282,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //  白名单支付
-    function whiteListPayment() public {
+    function whiteListPayment() public nonReentrant {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
         require(shareType.financingShare > publicSaleTotalSold, "sold out");
@@ -372,8 +340,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 检查第一次实缴是否成功
-    function checkWhiteList() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function checkWhiteList() public nonReentrant {
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
 
         require(
@@ -395,8 +362,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
     // 公售
     // @param amount_股数
-    function publicSale(uint256 amount_) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function publicSale(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not PAID status");
         require(
             amount_ <= maxNftAMOUNT && amount_ > 0,
@@ -442,8 +408,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 检查公售
-    function checkPublicSale() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function checkPublicSale() public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not PAID status");
         require(
             publicSaleTime + limitTimeType.publicSaleLimitTime <
@@ -460,8 +425,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 退回公售
-    function redeemPublicSale(uint256[] memory tokenIdList) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function redeemPublicSale(uint256[] memory tokenIdList) public nonReentrant {
         require(
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
@@ -495,8 +459,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 领取首次建造费
-    function claimFirstBuildFee() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function claimFirstBuildFee() public  nonReentrant{
         require(addrType.builderAddr == _msgSender(), "permission denied");
         //
         require(schedule == ActionChoices.startBuild, "not startBuild status");
@@ -527,8 +490,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 用户付尾款
-    function remainPayment(uint256[] memory tokenIdList) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function remainPayment(uint256[] memory tokenIdList) public nonReentrant {
         require(
             schedule == ActionChoices.remainPayment,
             "not remainPayment status"
@@ -578,8 +540,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 检查尾款是否成功
-    function checkRemainPayment() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function checkRemainPayment() public nonReentrant {
         require(schedule == ActionChoices.remainPayment, "not PAID status");
 
         //TODO 
@@ -602,8 +563,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 捡漏
-    function remainBargain(uint256 amount_) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function remainBargain(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.Bargain, "not PAID status");
         require(issuedTotalShare < shareType.financingShare, "Sold out");
         require(
@@ -642,8 +602,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 检查捡漏
-    function checkBargain() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function checkBargain() public nonReentrant{
         require(schedule == ActionChoices.Bargain, "not PAID status");
 
         //  不能小于零
@@ -661,8 +620,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 赎回股权付款
-    function redeemRemainPayment(uint256[] memory tokenIdList) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function redeemRemainPayment(uint256[] memory tokenIdList) public nonReentrant {
         require(schedule == ActionChoices.FAILED, "not FAILED status");
         require(
             tokenIdList.length <= 10 && tokenIdList.length > 0,
@@ -686,8 +644,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 领取剩余的货款
-    function claimRemainBuildFee() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function claimRemainBuildFee() public nonReentrant {
         require(_msgSender() == addrType.builderAddr, "permission denied");
         require(schedule == ActionChoices.FINISH, "not FINISH status");
         require(isClaimRemainBuild == false, "Can not receive repeatedly"); //  不能能重复领取
@@ -706,8 +663,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 运维 领取 30天一次
-    function operationsReceive() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function operationsReceive() public  nonReentrant{
         require(
             _msgSender() == addrType.operationsAddr,
             "user does not have permission"
@@ -732,8 +688,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //  spv 领取
-    function spvReceive() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function spvReceive() public  nonReentrant{
         require(
             _msgSender() == addrType.spvAddr,
             "user does not have permission"
@@ -762,8 +717,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //  押金
-    function electrStake() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function electrStake() public nonReentrant {
         require(
             _msgSender() == addrType.electrStakeAddr,
             "user does not have permission"
@@ -783,8 +737,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 电力领取  30天一次
-    function energyReceive() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function energyReceive() public nonReentrant{
         require(
             _msgSender() == addrType.electrAddr,
             "user does not have permission"
@@ -809,9 +762,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 保险领取  一年一次
-    function insuranceReceive() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
-        // 拒绝合约交易
+    function insuranceReceive() public nonReentrant {
         require(
             _msgSender() == addrType.insuranceAddr,
             "user does not have permission"

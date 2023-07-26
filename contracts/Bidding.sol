@@ -146,8 +146,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //  缴纳服务费
-    function payServiceFee() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function payServiceFee() public nonReentrant {
         require(_msgSender() == founderAddr, "user does not have permission"); // 创始人 PayServiceFee
         require(isPayService == false, "user does not have permission"); // 创始人
         isPayService = true;
@@ -161,8 +160,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //  缴纳尽调费
-    function payDDFee() public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function payDDFee() public nonReentrant {
         require(_msgSender() == founderAddr, "user does not have permission"); // 创始人
         require(isfDdFee == false, "user does not have permission"); // 创始人
         isfDdFee = true;
@@ -171,7 +169,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 退回尽调费
-    function refundDDFee() public onlyRole(ADMIN) {
+    function refundDDFee() public nonReentrant onlyRole(ADMIN) {
         require(isfDdFee == true, "user does not have permission");
         isfDdFee = false;
 
@@ -184,8 +182,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount,
         uint256 expire,
         bytes memory signature
-    ) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    ) public  nonReentrant {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(miner[_msgSender()].exist == false, "participated"); // 参与过了
 
@@ -216,8 +213,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount,
         uint256 nonce,
         bytes memory signature
-    ) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    ) public nonReentrant {
         require(miner[_msgSender()].exist == true, "miner  does not exist"); //   用户不存在
         require(miner[_msgSender()].nonce == nonce, "nonce invalid"); //   无效
         require(
@@ -257,7 +253,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeSharePrice_,
         uint256 subscribeTime_,
         uint256 subscribeLimitTime_
-    ) public onlyRole(PLATFORM) {
+    ) public nonReentrant onlyRole(PLATFORM) {
         require(financingShare_ > 0, "financingShare cannot be zero"); //  不能为零
         require(stakeSharePrice_ > 0, "subscribeLimitTime_ cannot be zero"); //  未开启
         require(subscribeTime_ > 0, "subscribeTime_ cannot be zero"); //  不能为零
@@ -271,8 +267,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     // @param stock 认购数
     // @param amount 5% stake
-    function subscribe(uint256 stock) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function subscribe(uint256 stock) public nonReentrant {
         require(stock > 0, "cannot be less than zero");
         require(financingShare * 2 > totalSold, "sold out"); // 售完
         require(subscribeTime > 0, "UnStart subscribe"); //  未开启
@@ -304,8 +299,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //    退款用户认缴
-    function unSubscribe(uint256 expire, bytes memory signature) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    function unSubscribe(uint256 expire, bytes memory signature) public nonReentrant {
         require(user[_msgSender()].exist == true, "company  does not exist"); //   用户不存在
         require(user[_msgSender()].unStake == false, "company  does not exist"); //
 
@@ -331,8 +325,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeAmount,
         uint256 expire,
         bytes memory signature
-    ) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(miner[_msgSender()].exist == true, "participated"); // 参与过了
         require(stakeAmount > miner[_msgSender()].amount, "participated"); // 参与过了
@@ -369,8 +362,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeAmount,
         uint256 expire,
         bytes memory signature
-    ) public {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
+    ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(companyList[role].exist == false, "participated"); // 参与过了
 
@@ -399,7 +391,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //    退款方案方质押
-    function unPlanStake(companyType role) public onlyRole(ADMIN) {
+    function unPlanStake(companyType role) public nonReentrant onlyRole(ADMIN) {
         require(companyList[role].exist == true, "company  does not exist"); //   用户不存在
         require(
             companyList[role].unStake == false,
@@ -418,7 +410,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    function transferAmount(uint256 amount) public {
+    function transferAmount(uint256 amount) public  {
         require(financAddr != address(0), "address is null");
         require(_msgSender() == financAddr, "only invoke by owner");
         usdt.transfer(financAddr, amount);
@@ -448,7 +440,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     function payDD() public onlyRole(ADMIN) {
-        usdt.safeTransfer(platformFeeAddr, ddFee);
+        usdt.safeTransfer(DDAddr, ddFee);
+    }
+    // 退还dd费
+    function refundDDFee() public onlyRole(ADMIN) {
+        usdt.safeTransfer(founderAddr, ddFee);
     }
 
     // 紧急提现
