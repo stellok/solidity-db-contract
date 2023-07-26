@@ -84,7 +84,7 @@ contract NFT721Impl is
 
     //   onlyOwner
     function mint(address account, uint256 amount) public onlyOwner {
-        emit nftlog(_msgSender());
+        require(amount <= 20, "mint amount >=20");
         for (uint i = 0; i < amount; i++) {
             currentTokenId += 1;
             _mint(account, currentTokenId);

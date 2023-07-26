@@ -76,7 +76,7 @@ contract("BiddingTest-main", (accounts) => {
     let resultApprove = await usdt.approve(bid.address, stakeAmount)
     assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
-    let expire = 1689753919
+    let expire = 1693107694
     //sign message
     let digest = ethers.solidityPackedKeccak256(["address", "uint8", "uint256", "uint256"], [accounts[0], 2, stakeAmount, expire])
     console.log(`digest : ${digest}`)

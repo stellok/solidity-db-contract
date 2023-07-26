@@ -79,7 +79,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     uint256 publicSaleTime; // 公售开始时间
     uint256 startBuildTime; //  开始建造时间
     uint256 bargainTime; // 捡漏开始时间
-    uint256 remainPaymentTime; // 白名单开始时间
+    uint256 public remainPaymentTime; // 白名单开始时间
 
     uint256 electrStartTime; // 上次电力结算时间
     uint256 operationStartTime; // 上次运维结算时间
@@ -516,7 +516,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             feeType.buildInsuranceFee,
             block.timestamp
         );
-        schedule == ActionChoices.remainPayment;
+        schedule = ActionChoices.remainPayment;
         remainPaymentTime = block.timestamp + limitTimeType.startBuildLimitTime;
 
         emit claimFirstBuildFeeLog(
@@ -536,7 +536,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         require(issuedTotalShare < shareType.financingShare, "Sold out");
         //  不能小于零
         require(
-            remainPaymentTime + limitTimeType.remainPaymentLimitTime >
+            (remainPaymentTime + limitTimeType.remainPaymentLimitTime) >
                 block.timestamp &&
                 block.timestamp > remainPaymentTime,
             "time expired"
@@ -582,6 +582,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.remainPayment, "not PAID status");
 
+        //TODO 
         require(
             remainPaymentTime + limitTimeType.remainPaymentLimitTime >
                 block.timestamp,
@@ -618,12 +619,13 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
         // 余额不足
         uint256 balance = shareType.financingShare - issuedTotalShare;
-        require(balance <= 0, "Sold out");
+        require(balance > 0, "Sold out");
         if (amount_ > balance) {
             amount_ = balance;
         }
         issuedTotalShare += amount_;
         shareNFT.mint(_msgSender(), amount_);
+        
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
@@ -841,20 +843,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             block.timestamp
         );
     }
-
-    // 分红规则投票
-    function dividends() public whenNotPaused nonReentrant {
-        //        分红类提案参数：（存在分红投票提案是，不允许新的分红提案出现）
-        //        1.分红时间（投票”7天投票时间“后即可执行）；
-        //        2.分红资产：可分红资产(计算公式如下）
-        //        3.分红地址：全体token持有人
-        //        4.判断执行与否：同意>不同意 即可执行， 同意<不同意，即不执行
-        //
-        //        可分红资产=当前合约资产-历史总未领取分红资产-下一阶段应付电费费用（应付电费/当前WBTC/USDT价格）-下一阶段应付运维费用（应付运维费/当前Wbtc/USDT价格）
-    }
-
-    // 项目失败后撤资
-    function failDivestment() public whenNotPaused nonReentrant {}
 
     function getChoice() public view returns (ActionChoices) {
         return schedule;

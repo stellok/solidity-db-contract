@@ -126,8 +126,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         address ddAddr_,
         address platformFeeAddr_
     ) {
+        //TODO testRole
         // _transferOwnership(owner_);
-        _setRoleAdmin(PLATFORM, OWNER);
+        _setRoleAdmin(ADMIN, OWNER);
+        _setRoleAdmin(PLATFORM, ADMIN);
         //        _setRoleAdmin(PLATFORM, ADMIN);
         _setupRole(PLATFORM, _msgSender());
         _setupRole(ADMIN, adminAddr_);

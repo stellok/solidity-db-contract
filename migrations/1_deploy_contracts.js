@@ -2,8 +2,10 @@ const Bidding = artifacts.require("Bidding");
 const USDT = artifacts.require("Usdt");
 const Financing = artifacts.require("Financing");
 const NFTImpl = artifacts.require("NFT721Impl");
+const Dividends = artifacts.require("Dividends");
 const tools = require('../tools/web3-utils');
-const BN = require('bn.js');
+const BN = require('bn.js');//Dividends
+
 
 module.exports = async function (deployer, network, accounts) {
 
@@ -118,27 +120,40 @@ module.exports = async function (deployer, network, accounts) {
     const remainPlatformFee = await tools.USDTToWei(usdtc, '33')
 
 
-    const totalShare = 9020
+
     const financingShare = 20
-    const founderShare = 2000
-    const platformShare = 7000
+    const founderShare = 5
+    const platformShare = 10
+    const totalShare = financingShare + founderShare + platformShare
+
     const sharePrice = await tools.USDTToWei(usdtc, '24')
     const stakeSharePrice = await tools.USDTToWei(usdtc, '7')
     const firstSharePrice = await tools.USDTToWei(usdtc, '8')
     const remainSharePrice = await tools.USDTToWei(usdtc, '9')
 
+
+    const whitelistPaymentLimitTime = 1; // 白名单限时
+    const publicSaleLimitTime = 864000; // 公售限时
+    const startBuildLimitTime = 4; // 开始建造时间
+    const bargainLimitTime = 5; // 捡漏开始时间
+    const remainPaymentLimitTime = 10000000; // 白名单开始时间
+    const electrIntervalTime = 7; // 电力间隔时间
+    const operationIntervalTime = 8; // 运维间隔时间
+    const insuranceIntervalTime = 9; // 保险次结算时间
+    const spvIntervalTime = 10; // 信托间隔时间
+
     //deploy Financing
     const tx = await deployer.deploy(Financing,
-        usdt,                                                                                                                                                                // IERC20 usdtAddr_
-        bidContract.address,                                                                                                                                                 // address bidding_
-        accounts[0],                                                                                                                                                         // address platformFeeAddr_
-        accounts[0],                                                                                                                                                         // address founderAddr_
-        [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee],        // []feeList_10
-        [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr],                                                              // []addrList_7
-        [1, 864000, 4, 5, 6, 7, 8, 9, 10],                                                                                                                                   // []limitTimeList_9
-        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                           // []shareList_8
+        usdt,                                                                                                                                                                                                   // IERC20 usdtAddr_
+        bidContract.address,                                                                                                                                                                                    // address bidding_
+        accounts[0],                                                                                                                                                                                            // address platformFeeAddr_
+        accounts[0],                                                                                                                                                                                            // address founderAddr_
+        [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee],                                           // []feeList_10
+        [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr],                                                                                                 // []addrList_7
+        [whitelistPaymentLimitTime, publicSaleLimitTime, startBuildLimitTime, bargainLimitTime, remainPaymentLimitTime, electrIntervalTime, operationIntervalTime, insuranceIntervalTime, spvIntervalTime],     // []limitTimeList_9
+        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                                                              // []shareList_8
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
-        "https://www.google.com",
+        "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
     )
 
     // console.log(tx)
@@ -160,17 +175,24 @@ module.exports = async function (deployer, network, accounts) {
     const u = await FinancingContract.usdt()
     console.log(`receiptNFT: ${receiptNFT} shareNFT: ${shareNFT}`)
 
-    //deploy nft
-    //string memory uri_, IERC20 usdtContract_, address owner_, uint256 feePoint_, address feeAddress_
-    // await deployer.deploy(NFTImpl,
-    //     'https://www.google.com',
-    //     usdt,
-    //     FinancingContract.address,
-    //     web3.utils.toWei('0.1', 'ether'),
-    //     accounts[1],
-    // )
-    // const nft = await NFTImpl.deployed();
-    // console.log(`nft address ${nft.address}`)
-    // const result = await FinancingContract.SetNft(nft.address)
-    // console.log(`setNFT ${JSON.stringify(result.receipt.status)}`)
+    // IERC20 usdt,
+    // IERC721 nft,
+    // uint256 financingFee_,
+    // address financingAddr_,
+    // uint256 totalShares_
+
+    const financingFee_ = tools.USDTToWei(usdtc, '12')
+
+    await deployer.deploy(Dividends,
+        usdtc.address,
+        receiptNFT,
+        financingFee_,
+        accounts[7],
+        100000
+    )
+
+    const divid = await Dividends.deployed()
+    console.log(`dividends contract ${divid.address}`)
+
+
 };

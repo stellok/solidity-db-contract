@@ -3,10 +3,11 @@ const { balanceOf } = require('./nft');
 const USDTTest = artifacts.require("Usdt");
 
 module.exports = {
-    printfLogs: function (params) {
-        console.log(`logs: ${JSON.stringify(params.receipt, null, 3)}`)
+    printfLogs: function (params,bool) {
+        console.log(`logs: ${JSON.stringify(params.receipt.logs, null, 3)}`)
     },
     timeout: function (ms) {
+        console.log(`wait for ${ms}`)
         return new Promise(resolve => setTimeout(resolve, ms));
     },
     getsignature: function (contract, name) {

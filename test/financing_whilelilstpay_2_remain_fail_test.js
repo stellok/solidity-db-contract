@@ -19,7 +19,7 @@ const ActionChoices = {
 }
 
 
-contract("FinancingTest-whilepay", (accounts) => {
+contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
 
     let user = accounts[5]
 
@@ -72,8 +72,6 @@ contract("FinancingTest-whilepay", (accounts) => {
         assert.equal(totalSold1, stock, "totalSold1 != stock");
 
         console.log(`after totalSold = ${totalSold1}`)
-
-        tools.printfLogs(sub)
     });
 
     it("testing whiteListPayment() should assert true", async function () {
@@ -88,8 +86,7 @@ contract("FinancingTest-whilepay", (accounts) => {
         console.log(`whitelistPaymentTime ${whitelistPaymentTime}`)
 
         const result = await financing.whiteListPayment({ from: user })
-        tools.printfLogs(result)
-
+        assert.equal(result.receipt.status, true, "whiteListPayment failed !");
 
     })
 
@@ -102,8 +99,6 @@ contract("FinancingTest-whilepay", (accounts) => {
 
         const checkWhiteList = await financing.checkWhiteList()
         assert.equal(checkWhiteList.receipt.status, true, "checkWhiteList failed !");
-
-        tools.printfLogs(checkWhiteList)
 
         // enum ActionChoices {
         //     INIT,
@@ -145,7 +140,8 @@ contract("FinancingTest-whilepay", (accounts) => {
         console.log(`publicSaleTotalSold ${publicSaleTotalSold}`)
 
         const pub = await financing.publicSale(amount_, { from: user })
-        tools.printfLogs(pub)
+        assert.equal(pub.receipt.status, true, "publicSale failed !");
+
 
         const receiptNFT = await financing.receiptNFT()
         const balance = await nft.balanceOf(receiptNFT, user)
@@ -199,6 +195,8 @@ contract("FinancingTest-whilepay", (accounts) => {
         expect(schedule.toNumber()).to.equal(ActionChoices.remainPayment)
     })
 
+
+    let remain2 = 5
     it("testing remainPayment() should assert true", async function () {
 
         await tools.timeout(5000)
@@ -215,7 +213,7 @@ contract("FinancingTest-whilepay", (accounts) => {
         const balance = await nft.balanceOf(receiptNFT, user)
 
         var ids = new Array()
-        for (let index = 1; index <= balance; index++) {
+        for (let index = 1; index <= (balance - remain2); index++) {
             ids.push(index)
         }
         console.log(`token ids ${ids}`)
@@ -229,7 +227,6 @@ contract("FinancingTest-whilepay", (accounts) => {
 
         const remainPayment = await financing.remainPayment(ids, { from: user })
         assert.equal(remainPayment.receipt.status, true, "remainPayment failed !");
-        tools.printfLogs(remainPayment)
 
         //issuedTotalShare >= shareType.financingShare
         const issuedTotalShare = await financing.issuedTotalShare()
@@ -237,7 +234,70 @@ contract("FinancingTest-whilepay", (accounts) => {
         if (issuedTotalShare >= shareType.financingShare) {
             console.log("ActionChoices.FINISH")
         }
-        
+
     })
 
+    //checkRemainPayment
+    it("testing checkRemainPayment() should assert true", async function () {
+        const financing = await Financing.deployed()
+        const shareType = await financing.shareType()
+
+        const tx = await financing.checkRemainPayment()
+        assert.equal(tx.receipt.status, true, "checkRemainPayment failed !");
+
+        //issuedTotalShare >= shareType.financingShare
+        const issuedTotalShare = await financing.issuedTotalShare()
+        console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
+
+        const schedule = await financing.schedule()
+        expect(schedule.toNumber()).to.equal(ActionChoices.Bargain)
+
+    })
+
+    //remainBargain
+    it("testing remainBargain() should assert true", async function () {
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+
+        const shareType = await financing.shareType()
+        //shareType.financingShare - issuedTotalShare
+        const issuedTotalShare = await financing.issuedTotalShare()
+        console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
+        const remian = shareType.financingShare - issuedTotalShare
+        console.log(`remain ${remian}`)
+        expect(remian).to.equal(remain2)
+
+        let num = 1
+        if (num > remian) {
+            num = remian
+        }
+        //amount_ * shareType.remainSharePrice 
+        //9000000000000000000
+        //9000000000000000000
+        const amount = tools.toBN(num).mul((shareType.remainSharePrice))
+        let resultApprove = await usdt.approve(financing.address, amount, { from: user })
+        assert.equal(resultApprove.receipt.status, true, "approve failed !");
+
+        const tx = await financing.remainBargain(num, { from: user })
+        assert.equal(tx.receipt.status, true, "remainBargain failed !");
+    })
+
+
+    //checkBargain
+    it("testing checkBargain() should assert true", async function () {
+        const financing = await Financing.deployed()
+        const checkBargain = await financing.checkBargain()
+        assert.equal(checkBargain.receipt.status, true, "approve failed !");
+
+        const schedule = await financing.schedule()
+        expect(schedule.toNumber()).to.equal(ActionChoices.FAILED)
+    })
+
+    //redeemRemainPayment
+    it("testing redeemRemainPayment() should assert true", async function () {
+        const financing = await Financing.deployed()
+        //tokenIdList
+        let ids = [16]
+        const redeemRemainPayment = await financing.redeemRemainPayment(ids,{ from: user })
+    })
 })
