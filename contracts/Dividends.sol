@@ -61,7 +61,6 @@ contract Dividends is ReentrancyGuard{
 
     // 检查当月分红
     function doMonthlyTask(uint256 index) public nonReentrant {
-        require(msg.sender == tx.origin, "Refusal to contract transactions");
         require(monthlyList[index] > 0, "amount cannot be zero");  // 不能为零
         require(monthlyList[index] +  30 days < block.timestamp, "no time");  // 没到时间呢
         require(receiveRecord[monthlyList[index]].exist == false, "has been comforted");  // 已经被舒适化
@@ -76,7 +75,6 @@ contract Dividends is ReentrancyGuard{
 
     // 领取分红
     function receiveDividends( uint256 index,uint256[] memory tokenList) public nonReentrant {
-        require(msg.sender == tx.origin, "Refusal to contract transactions");
         require(tokenList.length > 0 , "cannot be zero");
         require( receiveRecord[monthlyList[index]].exist == true, "This month's dividend has not been settled"); // 本月分红还没结算
         require( receiveRecord[monthlyList[index]].totalMonthlyBalance >= tokenList.length * receiveRecord[monthlyList[index]].dividend, "Insufficient dividend balance"); // 分红余额不足
