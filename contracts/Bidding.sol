@@ -57,7 +57,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
     mapping(companyType => companyStakeInfo) companyList;
 
-
     mapping(address => userStakeInfo) public user; // 用户
     mapping(address => minerStakeInfo) public miner; // 矿工
 
@@ -65,7 +64,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     bool public isfDdFee; //  是否缴纳尽调费
     bool public isPayService; // 是否 缴纳
-    bool public isPayMinerToSpv;  // 是否支付矿工费
+    bool public isPayMinerToSpv; // 是否支付矿工费
 
     address public platformAddr; //平台管理
     address public platformFeeAddr; //平台管理费地址
@@ -91,9 +90,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 fee,
         uint256 time
     );
-
-
-
 
     event payDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
@@ -181,7 +177,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount,
         uint256 expire,
         bytes memory signature
-    ) public  nonReentrant {
+    ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(miner[_msgSender()].exist == false, "participated"); // 参与过了
 
@@ -298,7 +294,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //    退款用户认缴
-    function unSubscribe(uint256 expire, bytes memory signature) public nonReentrant {
+    function unSubscribe(
+        uint256 expire,
+        bytes memory signature
+    ) public nonReentrant {
         require(user[_msgSender()].exist == true, "company  does not exist"); //   用户不存在
         require(user[_msgSender()].unStake == false, "company  does not exist"); //
 
@@ -409,7 +408,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    function transferAmount(uint256 amount) public  {
+    function transferAmount(uint256 amount) public {
         require(financAddr != address(0), "address is null");
         require(_msgSender() == financAddr, "only invoke by owner");
         usdt.transfer(financAddr, amount);
@@ -442,21 +441,18 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         usdt.safeTransfer(DDAddr, ddFee);
     }
 
-    //
-
-
     // 把矿工的质押金支付给spv
     function payMinerToSpv(
-            uint256 amount,
-            uint256 expire,
-            bytes memory signature
+        uint256 amount,
+        uint256 expire,
+        bytes memory signature
     ) public onlyRole(ADMIN) {
-        require(amount >=  0, "address is null"); //  不等于零
-        require(isPayMinerToSpv ==  false , "already paid"); //   已经支付了
+        require(amount >= 0, "address is null"); //  不等于零
+        require(isPayMinerToSpv == false, "already paid"); //   已经支付了
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
-                "ec853128", //todo  修改下函数名称
+                "4afc651e",
                 amount,
                 expire
             )
@@ -467,17 +463,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
         isPayMinerToSpv = true;
         usdt.safeTransfer(spvAddr, amount);
-        emit payMinerToSpvLog(
-            spvAddr,
-            amount,
-            block.timestamp
-        );
-    }
-
-
-    // 退还dd费
-    function refundDDFee() public onlyRole(ADMIN) {
-        usdt.safeTransfer(founderAddr, ddFee);
+        emit payMinerToSpvLog(spvAddr, amount, block.timestamp);
     }
 
     // 紧急提现
