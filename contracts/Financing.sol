@@ -425,7 +425,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 退回公售
-    function redeemPublicSale(uint256[] memory tokenIdList) public nonReentrant {
+    function redeemPublicSale(
+        uint256[] memory tokenIdList
+    ) public nonReentrant {
         require(
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
@@ -459,7 +461,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 领取首次建造费
-    function claimFirstBuildFee() public  nonReentrant{
+    function claimFirstBuildFee() public nonReentrant {
         require(addrType.builderAddr == _msgSender(), "permission denied");
         //
         require(schedule == ActionChoices.startBuild, "not startBuild status");
@@ -541,9 +543,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
     // 检查尾款是否成功
     function checkRemainPayment() public nonReentrant {
-        require(schedule == ActionChoices.remainPayment, "not remainPayment status");
+        require(
+            schedule == ActionChoices.remainPayment,
+            "not remainPayment status"
+        );
 
-        //TODO 
+        //TODO
         require(
             remainPaymentTime + limitTimeType.remainPaymentLimitTime >
                 block.timestamp,
@@ -586,7 +591,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
         issuedTotalShare += amount_;
         shareNFT.mint(_msgSender(), amount_);
-        
+
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
@@ -603,7 +608,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 检查捡漏
-    function checkBargain() public nonReentrant{
+    function checkBargain() public nonReentrant {
         require(schedule == ActionChoices.Bargain, "not PAID status");
 
         //  不能小于零
@@ -621,7 +626,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 赎回股权付款
-    function redeemRemainPayment(uint256[] memory tokenIdList) public nonReentrant {
+    function redeemRemainPayment(
+        uint256[] memory tokenIdList
+    ) public nonReentrant {
         require(schedule == ActionChoices.FAILED, "not FAILED status");
         require(
             tokenIdList.length <= 10 && tokenIdList.length > 0,
@@ -664,7 +671,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 运维 领取 30天一次
-    function operationsReceive() public  nonReentrant{
+    function operationsReceive() public nonReentrant {
         require(
             _msgSender() == addrType.operationsAddr,
             "user does not have permission"
@@ -689,7 +696,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //  spv 领取
-    function spvReceive() public  nonReentrant{
+    function spvReceive() public nonReentrant {
         require(
             _msgSender() == addrType.spvAddr,
             "user does not have permission"
@@ -738,7 +745,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     // 电力领取  30天一次
-    function energyReceive() public nonReentrant{
+    function energyReceive() public nonReentrant {
         require(
             _msgSender() == addrType.electrAddr,
             "user does not have permission"

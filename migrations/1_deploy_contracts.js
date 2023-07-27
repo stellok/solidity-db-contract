@@ -3,16 +3,19 @@ const USDT = artifacts.require("Usdt");
 const Financing = artifacts.require("Financing");
 const NFTImpl = artifacts.require("NFT721Impl");
 const Dividends = artifacts.require("Dividends");
+const { net } = require('web3');
 const tools = require('../tools/web3-utils');
 const BN = require('bn.js');//Dividends
 
 
 module.exports = async function (deployer, network, accounts) {
 
-    await deployer.deploy(NFTImpl, 'DB-a', 'DB-a')
+    const deplorerUser = accounts[0]
+
+    
 
     let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
-    if (network === 'development' || network === 'mumbai' || network === 'myR') {
+    if (network === 'development' || network === 'mumbai' || network === 'myR'|| network === "usdt") {
         //deployment usdt
         const init = new BN(10).pow(new BN(18)).mul(new BN('10000000000'))
         await deployer.deploy(USDT, init);
@@ -24,6 +27,12 @@ module.exports = async function (deployer, network, accounts) {
         console.log(`Owner USDT Balance: ${web3.utils.fromWei(usdtBalance, 'ether')}`)
         usdt = usdtContract.address
     }
+
+    if (network === "usdt"){
+        return 
+    }
+
+    await deployer.deploy(NFTImpl, 'DB-a', 'DB-a', { from: deplorerUser })
 
     if (network === 'local') {
         usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
@@ -37,7 +46,9 @@ module.exports = async function (deployer, network, accounts) {
         web3.utils.toWei('10000', 'ether'),       // service fee
         web3.utils.toWei('90000', 'ether'),       // dd fee
         accounts[0],                              // address ddAddr_
-        accounts[1]                               // platformFeeAddr_
+        accounts[1],                              //  address spvAddr_
+        accounts[2],
+        { from: deplorerUser }                              
     )
 
     const bidContract = await Bidding.deployed()
@@ -116,7 +127,7 @@ module.exports = async function (deployer, network, accounts) {
     const buildInsuranceFee = await tools.USDTToWei(usdtc, '7')
     const insuranceFee = await tools.USDTToWei(usdtc, '8')
     const spvFee = await tools.USDTToWei(usdtc, '9')
-    const publicSalePlatformFee = await tools.USDTToWei(usdtc, '22')
+    const publicSalePlatformFee = await tools.USDTToWei(usdtc, '2')
     const remainPlatformFee = await tools.USDTToWei(usdtc, '33')
 
 
@@ -154,6 +165,7 @@ module.exports = async function (deployer, network, accounts) {
         [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                                                              // []shareList_8
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
+        { from: deplorerUser }
     )
 
     // console.log(tx)
@@ -188,7 +200,8 @@ module.exports = async function (deployer, network, accounts) {
         receiptNFT,
         financingFee_,
         accounts[7],
-        100000
+        100000,
+        { from: deplorerUser }
     )
 
     const divid = await Dividends.deployed()

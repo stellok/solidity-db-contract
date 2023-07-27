@@ -3,7 +3,7 @@ const { balanceOf } = require('./nft');
 const USDTTest = artifacts.require("Usdt");
 
 module.exports = {
-    printfLogs: function (params,bool) {
+    printfLogs: function (params, bool) {
         console.log(`logs: ${JSON.stringify(params.receipt.logs, null, 3)}`)
     },
     timeout: function (ms) {
@@ -55,7 +55,7 @@ module.exports = {
         const usdtBalance = await usdt.balanceOf(address);
         return usdtBalance
     },
-    transferUSDT: async function (contract ,from, to, value) {
+    transferUSDT: async function (contract, from, to, value) {
         const ba = await this.printUSDT(contract, to)
         const amount = await this.USDTToWei(contract, value)
         const result = await contract.transfer(to, amount, { from: from })
@@ -68,6 +68,10 @@ module.exports = {
         const b = await this.USDTFromWei(contract, balance)
         console.log(`balance ${account} ${b} USDT`)
         return balance
+    },
+    approve: async function (contract, to, amount, caller) {
+        let resultApprove = await contract.approve(to, amount, { from: caller })
+        assert.equal(resultApprove.receipt.status, true, "approve failed !");
     }
 
 }

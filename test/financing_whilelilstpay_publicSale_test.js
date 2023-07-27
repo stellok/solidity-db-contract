@@ -19,7 +19,7 @@ const ActionChoices = {
 }
 
 
-contract("FinancingTest-whilepay", (accounts) => {
+contract("FinancingTest-whilepay-publicSale", (accounts) => {
 
     let user = accounts[5]
 
@@ -121,6 +121,7 @@ contract("FinancingTest-whilepay", (accounts) => {
         if (schedule == ActionChoices.publicSale) {
             console.log(`public sale open`)
         }
+
         if (schedule == ActionChoices.publicSaleFailed) {
             console.log(`public publicSaleFailed`)
         }
