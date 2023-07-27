@@ -57,15 +57,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
     mapping(companyType => companyStakeInfo) companyList;
 
-    //  Type
-    enum signType {
-        invalid,
-        unSubscribe,
-        minerStake,
-        unMinerStake,
-        planStake,
-        unPlanStake
-    }
 
     mapping(address => userStakeInfo) public user; // 用户
     mapping(address => minerStakeInfo) public miner; // 矿工
@@ -73,10 +64,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     IERC20 public usdt; // usdt
 
     bool public isfDdFee; //  是否缴纳尽调费
-    bool isPayService; // 是否 缴纳
+    bool public isPayService; // 是否 缴纳
+    bool public isPayMinerToSpv;  // 是否支付矿工费
 
     address public platformAddr; //平台管理
     address public platformFeeAddr; //平台管理费地址
+    address public spvAddr; // spv地址
     address public founderAddr; // 创始人
     address public DDAddr; // 尽调地址
 
@@ -99,11 +92,15 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 time
     );
 
+
+
+
     event payDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
     event uploadProjectLog(address addr, uint256 id, uint256 time);
     event minerIntentMoneyLog(address addr, uint256 id, uint256 time);
     event minerStakeLog(address addr, uint256 id, uint256 time);
+    event payMinerToSpvLog(address account, uint256 amount, uint256 time);
     event subscribeLog(
         address addr,
         uint256 stock,
@@ -124,7 +121,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 service_,
         uint256 ddFee_,
         address ddAddr_,
-        address platformFeeAddr_
+        address platformFeeAddr_,
+        address spvAddr_
     ) {
         //TODO testRole
         // _transferOwnership(owner_);
@@ -140,6 +138,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         founderAddr = founderAddr_; //创始人
         serviceFee = service_; //  服务费
 
+        spvAddr = spvAddr_;
         startTime = block.timestamp;
         usdt = usdtAddr_;
         platformFeeAddr = platformFeeAddr_;
@@ -442,6 +441,40 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     function payDD() public onlyRole(ADMIN) {
         usdt.safeTransfer(DDAddr, ddFee);
     }
+
+    //
+
+
+    // 把矿工的质押金支付给spv
+    function payMinerToSpv(
+            uint256 amount,
+            uint256 expire,
+            bytes memory signature
+    ) public onlyRole(ADMIN) {
+        require(amount >=  0, "address is null"); //  不等于零
+        require(isPayMinerToSpv ==  false , "already paid"); //   已经支付了
+        bytes32 msgSplice = keccak256(
+            abi.encodePacked(
+                address(this),
+                "ec853128", //todo  修改下函数名称
+                amount,
+                expire
+            )
+        );
+        _checkRole(
+            PLATFORM,
+            ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
+        );
+        isPayMinerToSpv = true;
+        usdt.safeTransfer(spvAddr, amount);
+        emit payMinerToSpvLog(
+            spvAddr,
+            amount,
+            block.timestamp
+        );
+    }
+
+
     // 退还dd费
     function refundDDFee() public onlyRole(ADMIN) {
         usdt.safeTransfer(founderAddr, ddFee);
