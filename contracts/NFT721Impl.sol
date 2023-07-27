@@ -279,7 +279,7 @@ contract NFT721Impl is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) internal virtual {
+    ) internal virtual  {
         _mint(to, tokenId);
         require(
             _checkOnERC721Received(address(0), to, tokenId, data),
@@ -287,7 +287,7 @@ contract NFT721Impl is
         );
     }
 
-    function _mint(address to, uint256 tokenId) internal virtual {
+    function _mint(address to, uint256 tokenId) internal virtual  {
         require(to != address(0), "ERC721: mint to the zero address");
         require(!_exists(tokenId), "ERC721: token already minted");
 

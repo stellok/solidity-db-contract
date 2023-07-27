@@ -541,7 +541,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
     // 检查尾款是否成功
     function checkRemainPayment() public nonReentrant {
-        require(schedule == ActionChoices.remainPayment, "not PAID status");
+        require(schedule == ActionChoices.remainPayment, "not remainPayment status");
 
         //TODO 
         require(
@@ -556,6 +556,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             schedule = ActionChoices.Bargain;
             //TODO
             //NFT.tokenIdBurn(receiptToken);
+            receiptNFT.pause(); // 将他暂停
             emit whetherFinishLog(false, block.timestamp);
         } else {
             _whetherFinish();
