@@ -201,7 +201,8 @@ module.exports = async function (deployer, network, accounts) {
         financingFee_,
         accounts[7],
         100000,
-        { from: deplorerUser }
+        12,                                   //expire_
+        { from: deplorerUser }                //overwrite: false
     )
 
     const divid = await Dividends.deployed()

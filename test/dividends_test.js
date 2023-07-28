@@ -34,12 +34,31 @@ contract("Dividends-test", (accounts) => {
         const lastExecuted = await dividends.lastExecuted()
         console.log((`lastExecuted ${lastExecuted}`))
 
-        const monthlyList = await dividends.monthlyList()
-        console.log(`monthlyList ${monthlyList}`)
+
+
     })
     //doMonthlyTask
-    // it("testing doMonthlyTask() should assert true", async function () {
-    //     const dividends = await Dividends.deployed();
-    //     const tx = await dividends.doMonthlyTask(0, { from: user2 })
-    // })
+    it("testing doMonthlyTask() should assert true", async function () {
+
+        await tools.timeout(22000)
+
+        const dividends = await Dividends.deployed();
+        const lastExecuted = await dividends.lastExecuted()
+        console.log((`lastExecuted ${lastExecuted}`))
+
+        const tx = await dividends.doMonthlyTask(0, { from: user2 })
+        assert.equal(tx.receipt.status, true, "doMonthlyTask failed !");
+    })
+
+    it("testing receiveDividends() should assert true", async function () {
+
+        // await tools.timeout(22000)
+
+        const dividends = await Dividends.deployed();
+        const lastExecuted = await dividends.lastExecuted()
+        console.log((`lastExecuted ${lastExecuted}`))
+        const ids = [1, 2, 3]
+        const tx = await dividends.receiveDividends(0, ids, { from: user2 })
+        assert.equal(tx.receipt.status, true, "doMonthlyTask failed !");
+    })
 })
