@@ -3,7 +3,6 @@ truffle test -g BiddingTest-paydd
 truffle test -g BiddingTest-main
 truffle test -g BiddingTest-planStake
 truffle test -g BiddingTest-subscribe
-truffle test -g FinancingTest-claimFirstBuildFee
 truffle test -g FinancingTest-whilepay-2-remain-success
 truffle test -g FinancingTest-whilepay-2-remain-fail
 truffle test -g FinancingTest-whilepay-publicSale

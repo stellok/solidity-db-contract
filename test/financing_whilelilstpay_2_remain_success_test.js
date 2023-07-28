@@ -81,7 +81,7 @@ contract("FinancingTest-whilepay-2-remain-success", (accounts) => {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 
-        let resultApprove = await usdt.approve(Financing.address, web3.utils.toWei(web3.utils.toBN(10000), 'ether'), { from: user })
+        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt,'10000'), { from: user })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         const whitelistPaymentTime = await financing.whitelistPaymentTime()
@@ -281,6 +281,7 @@ contract("FinancingTest-whilepay-2-remain-success", (accounts) => {
 
     //remainBargain
     it("testing remainBargain() should assert true", async function () {
+
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 

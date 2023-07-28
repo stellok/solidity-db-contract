@@ -12,24 +12,25 @@ module.exports = async function (deployer, network, accounts) {
 
     const deplorerUser = accounts[0]
 
-    
+    const usdtOnly = process.env.USDTOnly
 
     let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
-    if (network === 'development' || network === 'mumbai' || network === 'myR'|| network === "usdt") {
+    if (network === 'development' || network === 'mumbai' || network === 'myR' || usdtOnly) {
         //deployment usdt
-        const init = new BN(10).pow(new BN(18)).mul(new BN('10000000000'))
-        await deployer.deploy(USDT, init);
+        const init = new BN(10).pow(new BN(6)).mul(new BN('10000000000'))
+        await deployer.deploy(USDT, init, { from: deplorerUser });
         //access information about your deployed contract instance
         const usdtContract = await USDT.deployed();
         console.log(`USDT contract : ${usdtContract.address}`)
         const usdtBalance = await usdtContract.balanceOf(accounts[0]);
         console.log(`owner : ${accounts[0]}`)
-        console.log(`Owner USDT Balance: ${web3.utils.fromWei(usdtBalance, 'ether')}`)
+        console.log(`Owner USDT Balance: ${await tools.USDTFromWei(usdtContract,usdtBalance)}`)
         usdt = usdtContract.address
     }
 
-    if (network === "usdt"){
-        return 
+    if (usdtOnly) {
+        console.log(`only deployed usdt`)
+        return
     }
 
     await deployer.deploy(NFTImpl, 'DB-a', 'DB-a', { from: deplorerUser })
@@ -38,17 +39,20 @@ module.exports = async function (deployer, network, accounts) {
         usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
     }
 
+    const usdtc = await USDT.at(usdt)
+
+    
     //deploy bidding
     await deployer.deploy(Bidding,
         usdt,                                     // IERC20 usdtAddr_
         accounts[0],                              // address founderAddr_
         accounts[0],                              // address adminAddr_
-        web3.utils.toWei('10000', 'ether'),       // service fee
-        web3.utils.toWei('90000', 'ether'),       // dd fee
+        await tools.USDTToWei(usdtc,'10000'),       // service fee
+        await tools.USDTToWei(usdtc,'90000'),       // dd fee
         accounts[0],                              // address ddAddr_
         accounts[1],                              //  address spvAddr_
         accounts[2],
-        { from: deplorerUser }                              
+        { from: deplorerUser }
     )
 
     const bidContract = await Bidding.deployed()
@@ -106,7 +110,7 @@ module.exports = async function (deployer, network, accounts) {
     //  shareType.sharePrice] == shareList[shareType.stakeSharePrice] +shareList[shareType.firstSharePrice] +shareList[shareType. remainSharePrice
     //  shareType.totalShare] == shareList[shareType.financingShare] +shareList[shareType.founderShare] + shareList[shareType.platformShare
 
-    const usdtc = await USDT.at(usdt)
+    
 
     const builderAddr = accounts[2]; // 建造人
     const buildInsuranceAddr = accounts[3]; // 建造保险地址
@@ -146,7 +150,7 @@ module.exports = async function (deployer, network, accounts) {
     const whitelistPaymentLimitTime = 1; // 白名单限时
     const publicSaleLimitTime = 864000; // 公售限时
     const startBuildLimitTime = 4; // 开始建造时间
-    const bargainLimitTime = 5; // 捡漏开始时间
+    const bargainLimitTime = 3600; // 捡漏开始时间
     const remainPaymentLimitTime = 10000000; // 白名单开始时间
     const electrIntervalTime = 7; // 电力间隔时间
     const operationIntervalTime = 8; // 运维间隔时间

@@ -59,6 +59,6 @@ contract("Dividends-test", (accounts) => {
         console.log((`lastExecuted ${lastExecuted}`))
         const ids = [1, 2, 3]
         const tx = await dividends.receiveDividends(0, ids, { from: user2 })
-        assert.equal(tx.receipt.status, true, "doMonthlyTask failed !");
+        assert.equal(tx.receipt.status, true, "receiveDividends failed !");
     })
 })

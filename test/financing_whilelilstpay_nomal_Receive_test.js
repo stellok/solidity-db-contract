@@ -117,7 +117,7 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 
-        let resultApprove = await usdt.approve(Financing.address, web3.utils.toWei(web3.utils.toBN(10000), 'ether'), { from: user })
+        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt,'10000'), { from: user })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         const whitelistPaymentTime = await financing.whitelistPaymentTime()
@@ -140,7 +140,7 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 
-        let resultApprove = await usdt.approve(Financing.address, web3.utils.toWei(web3.utils.toBN(10000), 'ether'), { from: user2 })
+        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt,'10000'), { from: user2 })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         const whitelistPaymentTime = await financing.whitelistPaymentTime()
@@ -198,7 +198,7 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         expect(schedule.toNumber()).to.equal(ActionChoices.remainPayment)
     })
 
-    let remain2 = 5
+
     it("testing remainPayment() should assert true", async function () {
 
         await tools.timeout(5000)
@@ -215,7 +215,7 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         const balance = await nft.balanceOf(receiptNFT, user)
 
         var ids = new Array()
-        for (let index = 1; index <= (balance - remain2); index++) {
+        for (let index = 1; index <= balance; index++) {
             ids.push(index)
         }
         console.log(`token ids ${ids}`)
@@ -233,9 +233,52 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         //issuedTotalShare >= shareType.financingShare
         const issuedTotalShare = await financing.issuedTotalShare()
         console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
-        if (issuedTotalShare >= shareType.financingShare) {
+        if (issuedTotalShare.gte(shareType.financingShare)) {
             console.log("ActionChoices.FINISH")
         }
+
+    })
+
+    it("testing remainPayment2() should assert true", async function () {
+
+        await tools.timeout(5000)
+
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+
+        //remainPaymentTime + limitTimeType.remainPaymentLimitTime
+        const limitTimeType = await financing.limitTimeType()
+        const remainPaymentTime = await financing.remainPaymentTime()
+        console.log(remainPaymentTime.add(limitTimeType.remainPaymentLimitTime).toString())
+
+        const receiptNFT = await financing.receiptNFT()
+        const balance = await nft.balanceOf(receiptNFT, user2)
+        console.log(`remainPayment2 nft ${balance}`)
+        var ids = new Array()
+        for (let index = 11; index <= (balance.toNumber() + 10); index++) {
+            ids.push(index)
+        }
+        console.log(`token ids ${ids}`)
+
+        const shareType = await financing.shareType()
+        //
+        //tokenIdList.length * shareType.remainSharePrice
+        const amount = balance.mul(shareType.remainSharePrice)
+        let resultApprove = await usdt.approve(financing.address, amount, { from: user2 })
+        assert.equal(resultApprove.receipt.status, true, "approve failed !");
+
+        const remainPayment = await financing.remainPayment(ids, { from: user2 })
+        assert.equal(remainPayment.receipt.status, true, "remainPayment failed !");
+
+        //issuedTotalShare >= shareType.financingShare
+        const issuedTotalShare = await financing.issuedTotalShare()
+        console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
+        if (issuedTotalShare.gte(shareType.financingShare)) {
+            console.log("ActionChoices.FINISH")
+        }
+
+        const schedule = await financing.schedule()
+        expect(schedule.toNumber()).to.equal(ActionChoices.FINISH)
 
     })
 
@@ -248,11 +291,59 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         //addrType.spvAddr
         const addrType = await financing.addrType()
 
+        const spvBalance = await tools.balanceOF(usdt.address, addrType.spvAddr)
+
         const feeType = await financing.feeType()
         const tx = await financing.spvReceive({ from: caller })
+
         //feeType.spvFee
-        await tools.AssertUSDT(usdt.address, addrType.spvAddr, feeType.spvFee)
+        await tools.AssertUSDT(usdt.address, addrType.spvAddr, feeType.spvFee.add(spvBalance))
 
     })
 
+    //electrStake()
+    it("testing electrStake() should assert true", async function () {
+
+        const electrStakeAddr = accounts[2];
+
+        //addrType.electrStakeAddr, feeType.electrStakeFee
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+
+        const addrType = await financing.addrType()
+
+        const feeType = await financing.feeType()
+        const orgBalance = await tools.balanceOF(usdt.address, addrType.electrStakeAddr)
+
+        const electrStake = await financing.electrStake({ from: electrStakeAddr })
+        assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+
+        tools.AssertUSDT(usdt.address, addrType.electrStakeAddr, feeType.electrStakeFee.add(orgBalance))
+    })
+
+    //claimRemainBuildFee
+    it("testing electrStake() should assert true", async function () {
+
+        const electrStakeAddr = accounts[2];
+
+        // usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
+        // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+
+        const addrType = await financing.addrType()
+        const feeType = await financing.feeType()
+
+        const platformFeeAddr = await financing.platformFeeAddr()
+        const origPlatformFeeAddrBalance = await tools.balanceOF(usdt.address, platformFeeAddr)
+        //addrType.builderAddr
+        const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+
+        const electrStake = await financing.electrStake({from: electrStakeAddr})
+        assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+
+        await tools.AssertUSDT(usdt.address, addrType.builderAddr, feeType.remainBuildFee.add(origbuilderAddrBalance))
+        await tools.AssertUSDT(usdt.address, platformFeeAddr, feeType.feeType.publicSalePlatformFee.add(origPlatformFeeAddrBalance))
+
+    })
 })

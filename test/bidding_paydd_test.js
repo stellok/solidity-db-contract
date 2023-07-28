@@ -18,7 +18,7 @@ contract("BiddingTest-paydd", (accounts) => {
         const result = await usdt.transfer(user,amount)
         assert.equal(result.receipt.status, true, "transfer usdt failed !");
         const balance = await usdt.balanceOf(user)
-        console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
+        console.log(` ${user} ${await tools.USDTFromWei(usdt,balance)} USDT \n`)
 
     });
 

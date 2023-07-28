@@ -2,6 +2,7 @@ const Web3 = require('web3');
 const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const ethers = require("ethers");
+const tools = require('../tools/web3-utils');
 
 /*
  * uncomment accounts to access the test accounts made available by the
@@ -36,9 +37,12 @@ contract("BiddingTest-main", (accounts) => {
 
   it("testing minerStake() should assert true", async function () {
 
-    const stakeAmount = web3.utils.toWei('10000', 'ether')
+    //10000
+   
     const bid = await BiddingTest.deployed();
     const usdt = await USDTTest.deployed();
+
+    const stakeAmount = await tools.USDTToWei(usdt,'10000')
 
 
     const isParticipated = await bid.isParticipated(accounts[0])

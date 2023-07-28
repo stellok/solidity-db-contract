@@ -12,20 +12,15 @@ contract("BiddingTest-subscribe", (accounts) => {
         const usdt = await USDTTest.deployed();
 
         //transfer usdt
-        console.log(`\n using account ${user} as user ! `)
-        const amount = await tools.USDTToWei(usdt, '100000')
-        const result = await usdt.transfer(user,amount)
-        assert.equal(result.receipt.status, true, "transfer usdt failed !");
-        const balance = await usdt.balanceOf(user)
-        console.log(` ${user} ${web3.utils.fromWei(balance, 'ether')} USDT \n`)
+        await tools.transferUSDT(usdt,accounts[0],user,'100000')
 
         //startSubscribe 
         // uint256 financingShare_,
         // uint256 stakeSharePrice_,
         // uint256 subscribeTime_,
-        // uint256 subscribeLimitTime_
-        const financingShare_ = web3.utils.toWei('10000', 'ether')
-        const stakeSharePrice_ = web3.utils.toWei('20', 'ether')
+        // uint256 subscribeLimitTime_ 10000
+        const financingShare_ = await tools.USDTToWei(usdt,'10000')
+        const stakeSharePrice_ = await tools.USDTToWei(usdt,'20')
         let subBegin = await bid.startSubscribe(financingShare_, stakeSharePrice_, 1689581119, 1689753919);
         assert.equal(subBegin.receipt.status, true, "startSubscribe failed !");
         
@@ -48,7 +43,8 @@ contract("BiddingTest-subscribe", (accounts) => {
             stock = financingShare * 2 - totalSold;
         }
 
-        let resultApprove = await usdt.approve(bid.address, web3.utils.toWei(web3.utils.toBN(stock * stakeSharePrice), 'ether'), { from: user })
+        
+        let resultApprove = await usdt.approve(bid.address, await tools.USDTToWei(usdt,stock * stakeSharePrice), { from: user })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         let sub = await bid.subscribe(10, { from: user })

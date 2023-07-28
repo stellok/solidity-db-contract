@@ -111,13 +111,13 @@ contract("FinancingTest-whilepay-nomal", (accounts) => {
 
     });
 
-    
+
     it("testing whiteListPayment() should assert true", async function () {
 
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 
-        let resultApprove = await usdt.approve(Financing.address, web3.utils.toWei(web3.utils.toBN(10000), 'ether'), { from: user })
+        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt,'10000'), { from: user })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         const whitelistPaymentTime = await financing.whitelistPaymentTime()
@@ -140,7 +140,7 @@ contract("FinancingTest-whilepay-nomal", (accounts) => {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 
-        let resultApprove = await usdt.approve(Financing.address, web3.utils.toWei(web3.utils.toBN(10000), 'ether'), { from: user2 })
+        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt,'10000'), { from: user2 })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         const whitelistPaymentTime = await financing.whitelistPaymentTime()
@@ -166,19 +166,19 @@ contract("FinancingTest-whilepay-nomal", (accounts) => {
         const platformFeeAddr = await financing.platformFeeAddr()
         const platformFeeAddrBalanceOf = await tools.balanceOF(usdt.address, platformFeeAddr)
 
-        tools.printUSDT(usdt,financing.address)
+        tools.printUSDT(usdt, financing.address)
 
         const feeType = await financing.feeType()
 
         const total = feeType.firstBuildFee.add(feeType.publicSalePlatformFee).add(feeType.buildInsuranceFee)
-        const totalUSDT =  await tools.USDTFromWei(usdt,total)
+        const totalUSDT = await tools.USDTFromWei(usdt, total)
         console.log(`contract total ${totalUSDT} USDT`)
 
         const tx = await financing.claimFirstBuildFee({ from: accounts[2] });
         assert.equal(tx.receipt.status, true, "claimFirstBuildFee failed !");
 
         const addrType = await financing.addrType()
-       
+
         // usdt.safeTransfer(addrType.builderAddr, feeType.firstBuildFee);
         // // 给平台打钱
         // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
@@ -253,9 +253,9 @@ contract("FinancingTest-whilepay-nomal", (accounts) => {
 
         const receiptNFT = await financing.receiptNFT()
         const balance = await nft.balanceOf(receiptNFT, user2)
-
+        console.log(`remainPayment2 nft ${balance}`)
         var ids = new Array()
-        for (let index = 20; index <= balance; index++) {
+        for (let index = 11; index <= (balance.toNumber() + 10); index++) {
             ids.push(index)
         }
         console.log(`token ids ${ids}`)
