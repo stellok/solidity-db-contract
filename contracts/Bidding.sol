@@ -82,15 +82,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     uint256 minerStakeLimitTime; // 矿工质押限时
     uint256 public constant maxNftAMOUNT = 10;
 
-    //  创始人质押
-    event payServiceFeeLog(
-        address addr,
-        address to,
-        uint256 amount,
-        uint256 fee,
-        uint256 time
-    );
-
     event payDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
     event uploadProjectLog(address addr, uint256 id, uint256 time);
@@ -103,6 +94,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount,
         uint256 time
     );
+
     event payServiceFeeLog(
         address founderAddr,
         address platformFeeAddr,
