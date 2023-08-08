@@ -93,7 +93,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     event refundDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
     event unMinerIntentMoneyLog(address account, uint256 amount, uint256 time);
-    event uploadProjectLog(address addr, uint256 id, uint256 time);
     event minerIntentMoneyLog(address addr, uint256 id, uint256 time);
     event minerStakeLog(address addr, uint256 id, uint256 time);
     event unPlanStakeLog(
