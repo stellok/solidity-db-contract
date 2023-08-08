@@ -82,11 +82,32 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     uint256 minerStakeLimitTime; // 矿工质押限时
     uint256 public constant maxNftAMOUNT = 10;
 
+    event unSubscribeLog(address addr, uint256 id, uint256 time);
+    event startSubscribeLog(
+        uint256 financingShare_,
+        uint256 stakeSharePrice_,
+        uint256 subscribeTime_,
+        uint256 subscribeLimitTime_
+    );
     event payDDFeeLog(address account, uint256 amount, uint256 time);
+    event refundDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
+    event unMinerIntentMoneyLog(address account, uint256 amount, uint256 time);
     event uploadProjectLog(address addr, uint256 id, uint256 time);
     event minerIntentMoneyLog(address addr, uint256 id, uint256 time);
     event minerStakeLog(address addr, uint256 id, uint256 time);
+    event unPlanStakeLog(
+        address addr,
+        uint256 id,
+        uint256 time,
+        companyType role
+    );
+    event planStakeLog(
+        address addr,
+        uint256 id,
+        uint256 time,
+        companyType role
+    );
     event payMinerToSpvLog(address account, uint256 amount, uint256 time);
     event subscribeLog(
         address addr,
@@ -113,7 +134,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         address spvAddr_,
         address owner_
     ) {
-
         _setRoleAdmin(ADMIN, OWNER);
         _setRoleAdmin(PLATFORM, ADMIN);
 
@@ -162,7 +182,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         isDdFee = false;
 
         usdt.safeTransfer(founderAddr, ddFee);
-        emit payDDFeeLog(founderAddr, ddFee, block.timestamp);
+        emit refundDDFeeLog(founderAddr, ddFee, block.timestamp);
     }
 
     // 矿工质押
@@ -228,7 +248,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         miner[_msgSender()].amount -= amount;
         miner[_msgSender()].nonce += 1;
         usdt.safeTransfer(_msgSender(), miner[_msgSender()].amount);
-        emit unMinerStakeLog(
+        emit unMinerIntentMoneyLog(
             _msgSender(),
             miner[_msgSender()].amount,
             block.timestamp
@@ -251,6 +271,13 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         stakeSharePrice = stakeSharePrice_;
         subscribeTime = subscribeTime_;
         subscribeLimitTime = subscribeLimitTime_;
+
+        emit startSubscribeLog(
+            financingShare_,
+            stakeSharePrice_,
+            subscribeTime_,
+            subscribeLimitTime_
+        );
     }
 
     // @param stock 认购数
@@ -304,7 +331,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
         user[_msgSender()].unStake = true;
         usdt.safeTransfer(_msgSender(), user[_msgSender()].amount);
-        emit minerStakeLog(
+        emit unSubscribeLog(
             _msgSender(),
             user[_msgSender()].amount,
             block.timestamp
@@ -378,7 +405,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         companyList[role].exist = true;
         companyList[role].addr = _msgSender();
         usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount);
-        emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
+        emit planStakeLog(_msgSender(), stakeAmount, block.timestamp, role);
     }
 
     //    退款方案方质押
@@ -394,10 +421,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             companyList[role].addr,
             companyList[role].stakeAmount
         );
-        emit minerStakeLog(
+        emit unPlanStakeLog(
             companyList[role].addr,
             companyList[role].stakeAmount,
-            block.timestamp
+            block.timestamp,
+            role
         );
     }
 
@@ -443,12 +471,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(amount >= 0, "address is null"); //  不等于零
         require(isPayMinerToSpv == false, "already paid"); //   已经支付了
         bytes32 msgSplice = keccak256(
-            abi.encodePacked(
-                address(this),
-                "4afc651e",
-                amount,
-                expire
-            )
+            abi.encodePacked(address(this), "4afc651e", amount, expire)
         );
         _checkRole(
             PLATFORM,
