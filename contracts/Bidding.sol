@@ -62,7 +62,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     IERC20 public usdt; // usdt
 
-    bool public isfDdFee; //  是否缴纳尽调费
+    bool public isDdFee; //  是否缴纳尽调费
     bool public isPayService; // 是否 缴纳
     bool public isPayMinerToSpv; // 是否支付矿工费
 
@@ -110,15 +110,16 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 ddFee_,
         address ddAddr_,
         address platformFeeAddr_,
-        address spvAddr_
+        address spvAddr_,
+        address owner_
     ) {
-        //TODO testRole
-        // _transferOwnership(owner_);
+
         _setRoleAdmin(ADMIN, OWNER);
         _setRoleAdmin(PLATFORM, ADMIN);
-        //        _setRoleAdmin(PLATFORM, ADMIN);
+
         _setupRole(PLATFORM, _msgSender());
         _setupRole(ADMIN, adminAddr_);
+        _setupRole(OWNER, owner_);
 
         ddFee = ddFee_; //  尽调费
         DDAddr = ddAddr_; //矿场提供方
@@ -149,16 +150,16 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     //  缴纳尽调费
     function payDDFee() public nonReentrant {
         require(_msgSender() == founderAddr, "user does not have permission"); // 创始人
-        require(isfDdFee == false, "user does not have permission"); // 创始人
-        isfDdFee = true;
+        require(isDdFee == false, "user does not have permission"); // 创始人
+        isDdFee = true;
         usdt.safeTransferFrom(_msgSender(), address(this), ddFee); // 缴给
         emit payDDFeeLog(founderAddr, ddFee, block.timestamp);
     }
 
     // 退回尽调费
     function refundDDFee() public nonReentrant onlyRole(ADMIN) {
-        require(isfDdFee == true, "user does not have permission");
-        isfDdFee = false;
+        require(isDdFee == true, "user does not have permission");
+        isDdFee = false;
 
         usdt.safeTransfer(founderAddr, ddFee);
         emit payDDFeeLog(founderAddr, ddFee, block.timestamp);
