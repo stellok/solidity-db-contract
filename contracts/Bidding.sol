@@ -246,7 +246,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
         miner[_msgSender()].amount -= amount;
         miner[_msgSender()].nonce += 1;
-        usdt.safeTransfer(_msgSender(), miner[_msgSender()].amount);
+        usdt.safeTransfer(_msgSender(), amount);
         emit unMinerIntentMoneyLog(
             _msgSender(),
             miner[_msgSender()].amount,
