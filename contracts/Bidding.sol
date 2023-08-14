@@ -247,11 +247,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         miner[_msgSender()].amount -= amount;
         miner[_msgSender()].nonce += 1;
         usdt.safeTransfer(_msgSender(), amount);
-        emit unMinerIntentMoneyLog(
-            _msgSender(),
-            miner[_msgSender()].amount,
-            block.timestamp
-        );
+        emit unMinerIntentMoneyLog(_msgSender(), amount, block.timestamp);
     }
 
     // 开启认购
@@ -329,10 +325,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
 
         user[_msgSender()].unStake = true;
-        usdt.safeTransfer(_msgSender(), user[_msgSender()].amount);
+        uint256 amount = user[_msgSender()].amount * stakeSharePrice;
+        usdt.safeTransfer(_msgSender(), amount);
         emit unSubscribeLog(
             _msgSender(),
-            user[_msgSender()].amount,
+            amount,
             block.timestamp
         );
     }
