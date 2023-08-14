@@ -345,8 +345,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(miner[_msgSender()].exist == true, "participated"); // 参与过了
-       
-        // 
+
+        //
         //require(stakeAmount > miner[_msgSender()].amount, "participated"); // 参与过了
 
         bytes32 msgSplice = keccak256(
@@ -434,6 +434,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(financAddr != address(0), "address is null");
         require(_msgSender() == financAddr, "only invoke by owner");
         usdt.transfer(financAddr, amount);
+    }
+
+    function StakeAmount(address account) public view returns (uint256) {
+        return miner[account].stakeAmount;
     }
 
     function setFinancing(address addr) public onlyRole(PLATFORM) {
