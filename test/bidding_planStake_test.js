@@ -55,7 +55,6 @@ contract("BiddingTest-planStake", (accounts) => {
 
         let expire = 1690616038
 
-
         //sign message
         let digest = ethers.solidityPackedKeccak256(["address", "string", "address", "uint8", "uint256", "uint256", "uint256"], [bid.address, tools.getsignature(bid, 'planStake'), user, role, totalAmount.toString(), stakeAmount.toString(), expire])
         console.log(`digest : ${digest}`)

@@ -439,9 +439,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         financAddr = addr;
     }
 
-    // todo 返回质押  minerStake
     function IntentMoneyAmount(address account) public view returns (uint256) {
         return miner[account].amount;
+    }
+
+    function StakeAmount(address account) public view returns (uint256) {
+        return miner[account].stakeAmount;
     }
 
     // 查看认缴金额

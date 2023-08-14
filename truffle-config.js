@@ -75,14 +75,39 @@ module.exports = {
             port: 8545,            // Standard Ethereum port (default: none)
             network_id: "*",       // Any network (default: none)
         },
-
+        myR: {
+            host: "192.168.1.115",     // Localhost (default: none)
+            port: 8545,            // Standard Ethereum port (default: none)
+            network_id: "*",       // Any network (default: none)
+        },
         //http://192.168.1.251:8549
         local: {
-          provider: () => new HDWalletProvider('during retreat copy liberty gauge acquire twenty nice today dry leader speed', `http://192.168.1.251:8549/`),
-          network_id: '*',       // Goerli's id
-          confirmations: 1,    // # of confirmations to wait between deployments. (default: 0)
-          timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
-          skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+            provider: () => new HDWalletProvider('during retreat copy liberty gauge acquire twenty nice today dry leader speed', `http://192.168.1.251:8549/`),
+            network_id: '*',       // Goerli's id
+            confirmations: 1,    // # of confirmations to wait between deployments. (default: 0)
+            timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+            skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+        },
+        mumbai: {
+            //https://rpc.ankr.com/polygon_mumbai/44ea52b1526c18cf69fe6b5a69caade05c3483b7c02f4935fdb1ac2b8bd2d41f
+            provider: () => new HDWalletProvider('during retreat copy liberty gauge acquire twenty nice today dry leader speed', `https://rpc.ankr.com/polygon_mumbai/4ffa2238d22b8396425a44b45ed725bf14d2c07c7bb7d8cc1ff366177e5c51a9`),
+            network_id: '*',       // Goerli's id
+            confirmations: 5,    // # of confirmations to wait between deployments. (default: 0)
+            timeoutBlocks: 2000,  // # of blocks before a deployment times out  (minimum/default: 50)
+            skipDryRun: true,     // Skip dry run before migrations? (default: false for public nets )
+            timeout: 600000,
+            networkCheckTimeout: 10000,
+        },
+        polygon: {
+            provider: () => new HDWalletProvider('during retreat copy liberty gauge acquire twenty nice today dry leader speed', `https://polygon-mainnet.infura.io/v3/8ac85b05af6840f28bb9b30ae363bd0f`),
+            network_id: '*',       // Goerli's id
+            confirmations: 1,    // # of confirmations to wait between deployments. (default: 0)
+            timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+            skipDryRun: true,     // Skip dry run before migrations? (default: false for public nets )
+            timeout: 600000,
+            networkCheckTimeout: 10000,
+            timeoutBlocks: 200,
+            gasPrice: 85000000000
         },
         //
         // An additional network, but with some advanced options…

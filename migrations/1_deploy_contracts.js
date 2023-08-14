@@ -5,16 +5,21 @@ const NFTImpl = artifacts.require("NFT721Impl");
 const Dividends = artifacts.require("Dividends");
 const { net } = require('web3');
 const tools = require('../tools/web3-utils');
+const HttpClient = require('../tools/http');
 const BN = require('bn.js');//Dividends
-
+const client = new HttpClient('http://172.18.144.1:8088');
 
 module.exports = async function (deployer, network, accounts) {
+    const roleTest = process.env.roleTest
+    if (roleTest) {
+        return
+    }
 
     const deplorerUser = accounts[0]
 
     const usdtOnly = process.env.USDTOnly
 
-    let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
+    let usdt = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'
     if (network === 'development' || network === 'mumbai' || network === 'myR' || usdtOnly) {
         //deployment usdt
         const init = new BN(10).pow(new BN(6)).mul(new BN('10000000000'))
@@ -24,8 +29,15 @@ module.exports = async function (deployer, network, accounts) {
         console.log(`USDT contract : ${usdtContract.address}`)
         const usdtBalance = await usdtContract.balanceOf(accounts[0]);
         console.log(`owner : ${accounts[0]}`)
-        console.log(`Owner USDT Balance: ${await tools.USDTFromWei(usdtContract,usdtBalance)}`)
+        console.log(`Owner USDT Balance: ${await tools.USDTFromWei(usdtContract, usdtBalance)}`)
         usdt = usdtContract.address
+
+    
+        client.post('/cache/abi', { contract: usdt, abi: JSON.stringify(usdtContract.abi) }).then(response => {
+            console.log(response);
+        }).catch(error => {
+            console.log(error);
+        });
     }
 
     if (usdtOnly) {
@@ -40,24 +52,29 @@ module.exports = async function (deployer, network, accounts) {
     }
 
     const usdtc = await USDT.at(usdt)
-
-    
     //deploy bidding
     await deployer.deploy(Bidding,
         usdt,                                     // IERC20 usdtAddr_
         accounts[0],                              // address founderAddr_
         accounts[0],                              // address adminAddr_
-        await tools.USDTToWei(usdtc,'10000'),       // service fee
-        await tools.USDTToWei(usdtc,'90000'),       // dd fee
+        await tools.USDTToWei(usdtc, '10000'),    // service fee
+        await tools.USDTToWei(usdtc, '90000'),    // dd fee
         accounts[0],                              // address ddAddr_
-        accounts[1],                              //  address spvAddr_
-        accounts[2],
+        accounts[1],                              // platformFeeAddr_,
+        accounts[2],                              // spvAddr_
+        accounts[3],                              // address owner_
         { from: deplorerUser }
     )
 
     const bidContract = await Bidding.deployed()
     console.log(`bidding contract : ${bidContract.address}`)
 
+     //regist bidding
+     client.post('/cache/abi', { contract: bidContract.address, abi: JSON.stringify(bidContract.abi) }).then(response => {
+        console.log(response);
+    }).catch(error => {
+        console.log(error);
+    });
 
 
     // IERC20 usdtAddr_,
@@ -110,7 +127,7 @@ module.exports = async function (deployer, network, accounts) {
     //  shareType.sharePrice] == shareList[shareType.stakeSharePrice] +shareList[shareType.firstSharePrice] +shareList[shareType. remainSharePrice
     //  shareType.totalShare] == shareList[shareType.financingShare] +shareList[shareType.founderShare] + shareList[shareType.platformShare
 
-    
+
 
     const builderAddr = accounts[2]; // 建造人
     const buildInsuranceAddr = accounts[3]; // 建造保险地址
@@ -172,12 +189,19 @@ module.exports = async function (deployer, network, accounts) {
         { from: deplorerUser }
     )
 
-    // console.log(tx)
 
     const FinancingContract = await Financing.deployed()
 
+    //regist abi
+    client.post('/cache/abi', { contract: FinancingContract.address, abi: JSON.stringify(FinancingContract.abi) }).then(response => {
+        console.log(response);
+    }).catch(error => {
+        console.log(error);
+    });
+
+
     //setFinancing
-    const bResult = await bidContract.setFinancing(FinancingContract.address)
+    const bResult = await bidContract.setFinancing(FinancingContract.address, { from: deplorerUser })
     if (!bResult.receipt.status) {
         console.log('setFinancing failed !')
     }
@@ -190,6 +214,18 @@ module.exports = async function (deployer, network, accounts) {
     const shareNFT = await FinancingContract.shareNFT()
     const u = await FinancingContract.usdt()
     console.log(`receiptNFT: ${receiptNFT} shareNFT: ${shareNFT}`)
+
+    client.post('/cache/abi', { contract: receiptNFT, abi: JSON.stringify(NFTImpl.abi) }).then(response => {
+        console.log(response);
+    }).catch(error => {
+        console.log(error);
+    });
+
+    client.post('/cache/abi', { contract: shareNFT, abi: JSON.stringify(NFTImpl.abi) }).then(response => {
+        console.log(response);
+    }).catch(error => {
+        console.log(error);
+    });
 
     // IERC20 usdt,
     // IERC721 nft,

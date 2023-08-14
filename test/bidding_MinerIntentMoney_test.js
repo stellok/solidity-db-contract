@@ -42,6 +42,7 @@ contract("BiddingTest-MinerIntentMoney", (accounts) => {
         // console.log(`signed: ${msg}`)
 
         signature = signature.substr(0, 130) + (signature.substr(130) == "00" ? "1b" : "1c");
+        console.log(`signature ${signature}`)
 
         //recover
         const recover = web3.eth.accounts.recover(digest, signature)
