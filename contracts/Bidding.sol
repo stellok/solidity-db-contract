@@ -345,7 +345,9 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(miner[_msgSender()].exist == true, "participated"); // 参与过了
-        require(stakeAmount > miner[_msgSender()].amount, "participated"); // 参与过了
+       
+        // 
+        //require(stakeAmount > miner[_msgSender()].amount, "participated"); // 参与过了
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
@@ -368,7 +370,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             stakeAmount - miner[_msgSender()].amount
         );
         miner[_msgSender()].stakeAmount = stakeAmount;
-        miner[_msgSender()].amount = 0;
+        // miner[_msgSender()].amount = 0;
         emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
     }
 
