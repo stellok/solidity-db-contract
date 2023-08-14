@@ -221,12 +221,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 nonce,
         bytes memory signature
     ) public nonReentrant {
-        require(miner[_msgSender()].exist == true, "miner  does not exist"); //   用户不存在
-        require(miner[_msgSender()].nonce == nonce, "nonce invalid"); //   无效
+        require(miner[_msgSender()].exist == true, "miner  does not exist"); //用户不存在
+        require(miner[_msgSender()].nonce == nonce, "nonce invalid"); //无效
         require(
             miner[_msgSender()].amount >= amount && amount > 0,
             "amount invalid"
-        ); //   无效
+        ); //无效
         require(expire > block.timestamp, "not yet expired"); // 还没到期
 
         bytes32 msgSplice = keccak256(
@@ -337,17 +337,15 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    // 矿工质押
     function minerStake(
         uint256 stakeAmount,
         uint256 expire,
         bytes memory signature
     ) public nonReentrant {
-        require(expire > block.timestamp, "not yet expired"); // 还没到期
-        require(miner[_msgSender()].exist == true, "participated"); // 参与过了
+        require(expire > block.timestamp, "not yet expired");
+        require(miner[_msgSender()].exist == true, "participated");
 
-        //
-        //require(stakeAmount > miner[_msgSender()].amount, "participated"); // 参与过了
+        //require(stakeAmount > miner[_msgSender()].amount, "participated");
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
@@ -364,14 +362,47 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
 
-        usdt.safeTransferFrom(
-            _msgSender(),
-            address(this),
-            stakeAmount - miner[_msgSender()].amount
-        );
+        usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount);
         miner[_msgSender()].stakeAmount = stakeAmount;
         // miner[_msgSender()].amount = 0;
         emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
+    }
+
+    function unMinerStake(
+        uint256 expire,
+        uint256 amount,
+        uint256 nonce,
+        bytes memory signature
+    ) public nonReentrant {
+        require(miner[_msgSender()].exist == true, "miner  does not exist"); //
+        require(miner[_msgSender()].nonce == nonce, "nonce invalid"); //
+        require(
+            miner[_msgSender()].stakeAmount >= amount && amount > 0,
+            "amount invalid"
+        );
+        require(expire > block.timestamp, "not yet expired"); //
+
+        bytes32 msgSplice = keccak256(
+            abi.encodePacked(
+                address(this),
+                "15cababe",
+                _msgSender(),
+                expire,
+                amount,
+                nonce
+            )
+        );
+
+        _checkRole(
+            PLATFORM,
+            ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
+        );
+
+        miner[_msgSender()].stakeAmount -= amount;
+        miner[_msgSender()].nonce += 1;
+        usdt.safeTransfer(_msgSender(), amount);
+
+        emit unMinerStakeLog(_msgSender(), amount, block.timestamp);
     }
 
     // 方案质押
