@@ -169,6 +169,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
     event energyReceiveLog(address, uint256 amount_, uint256 time_);
     event startPublicSaleLog(uint256 unpaid_, uint256 time_);
+    event startBargainLog(uint256 unpaid_, uint256 time_);
     event publicSaleLog(
         address,
         uint256 amount_,
@@ -562,7 +563,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             //TODO
             //NFT.tokenIdBurn(receiptToken);
             receiptNFT.pause(); // 将他暂停
-            emit whetherFinishLog(false, block.timestamp);
+            emit startBargainLog(
+                issuedTotalShare - shareType.financingShare,
+                block.timestamp
+            );
         } else {
             _whetherFinish();
         }
