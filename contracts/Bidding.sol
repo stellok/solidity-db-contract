@@ -89,6 +89,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 subscribeTime_,
         uint256 subscribeLimitTime_
     );
+
+    event payDDLog(address account, uint256 amount, uint256 time);
     event payDDFeeLog(address account, uint256 amount, uint256 time);
     event refundDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
@@ -490,6 +492,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     function payDD() public onlyRole(ADMIN) {
         usdt.safeTransfer(DDAddr, ddFee);
+        emit payDDLog(DDAddr, ddFee, block.timestamp);
     }
 
     // 把矿工的质押金支付给spv
