@@ -230,9 +230,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         founderAddr = founderAddr_;
         require(
             shareType.sharePrice ==
-                shareType.stakeSharePrice +
-                    shareType.firstSharePrice +
-                    shareType.remainSharePrice,
+                    shareType.firstSharePrice +  //30
+                    shareType.remainSharePrice,  //70
             "sharePrice verification failed"
         ); // 价格校验失败
         require(
@@ -308,9 +307,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
         publicSaleTotalSold += amount;
 
-        //TODO
-        // uint256 gAmout = amount * shareType.stakeSharePrice;
-        // bidding.transferAmount(gAmout);
+     
+        uint256 gAmout = amount * shareType.stakeSharePrice;
+        bidding.transferAmount(gAmout);
 
         // 同时通知招投标合约释放押金
         usdt.safeTransferFrom(
@@ -319,10 +318,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             amount * (shareType.firstSharePrice - shareType.stakeSharePrice)
         );
 
+
         emit whiteListPaymentLog(
             _msgSender(),
             amount,
-            shareType.firstSharePrice,
+            (shareType.firstSharePrice - shareType.stakeSharePrice),
             block.timestamp
         );
 
@@ -451,7 +451,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
             emit redeemPublicSaleLog(
                 tokenIdList[i],
-                shareType.firstSharePrice + shareType.stakeSharePrice
+                shareType.firstSharePrice
             );
         }
 
