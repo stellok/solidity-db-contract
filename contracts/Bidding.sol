@@ -282,6 +282,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(financingShare * 2 > totalSold, "sold out"); // 售完
         require(subscribeTime > 0, "UnStart subscribe"); //  未开启
         require(stock <= maxNftAMOUNT, "stock > 10");
+        require(user[_msgSender()].amount <= 100, "total stock must < 100");
 
         require(
             subscribeTime + subscribeLimitTime > block.timestamp,
@@ -327,11 +328,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         user[_msgSender()].unStake = true;
         uint256 amount = user[_msgSender()].amount * stakeSharePrice;
         usdt.safeTransfer(_msgSender(), amount);
-        emit unSubscribeLog(
-            _msgSender(),
-            amount,
-            block.timestamp
-        );
+        emit unSubscribeLog(_msgSender(), amount, block.timestamp);
     }
 
     function minerStake(
