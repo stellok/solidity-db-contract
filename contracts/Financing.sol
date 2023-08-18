@@ -81,7 +81,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     uint256 bargainTime; // 捡漏开始时间
     uint256 public remainPaymentTime; // 白名单开始时间
 
-    uint256 electrStartTime; // 上次电力结算时间
+    uint256 public electrStartTime; // 上次电力结算时间
     uint256 operationStartTime; // 上次运维结算时间
     uint256 insuranceStartTime; // 上保险次结算时间
     uint256 spvStartTime; // 上保险次结算时间
@@ -167,7 +167,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     );
     event redeemPublicSaleLog(uint256 tokenId_, uint256 amount_);
 
-    event energyReceiveLog(address, uint256 amount_, uint256 time_);
+    event energyReceiveLog(address addr, uint256 mouth, uint256 amount_, uint256 time_);
     event startPublicSaleLog(uint256 unpaid_, uint256 time_);
     event startBargainLog(uint256 unpaid_, uint256 time_);
     event publicSaleLog(
@@ -230,8 +230,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         founderAddr = founderAddr_;
         require(
             shareType.sharePrice ==
-                    shareType.firstSharePrice +  //30
-                    shareType.remainSharePrice,  //70
+                shareType.firstSharePrice + //30
+                    shareType.remainSharePrice, //70
             "sharePrice verification failed"
         ); // 价格校验失败
         require(
@@ -307,7 +307,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
         publicSaleTotalSold += amount;
 
-     
         uint256 gAmout = amount * shareType.stakeSharePrice;
         bidding.transferAmount(gAmout);
 
@@ -317,7 +316,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             address(this),
             amount * (shareType.firstSharePrice - shareType.stakeSharePrice)
         );
-
 
         emit whiteListPaymentLog(
             _msgSender(),
@@ -449,10 +447,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 shareType.remainSharePrice
             );
 
-            emit redeemPublicSaleLog(
-                tokenIdList[i],
-                shareType.firstSharePrice
-            );
+            emit redeemPublicSaleLog(tokenIdList[i], shareType.firstSharePrice);
         }
 
         usdt.safeTransfer(
@@ -762,15 +757,14 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             "Refusal to contract transactions"
         );
         // 判断第一次领取 需要质押电力
-        uint256 months = block.timestamp -
-            electrStartTime /
+        uint256 months = (block.timestamp - electrStartTime) /
             limitTimeType.electrIntervalTime;
 
         uint256 amount = months * feeType.electrFee;
         electrStartTime += months * limitTimeType.electrIntervalTime;
         // 判断第一次押金
         usdt.safeTransfer(addrType.electrAddr, amount);
-        emit energyReceiveLog(addrType.electrAddr, amount, block.timestamp);
+        emit energyReceiveLog(addrType.electrAddr,months, amount, block.timestamp);
     }
 
     // 保险领取  一年一次

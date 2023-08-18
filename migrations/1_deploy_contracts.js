@@ -51,7 +51,8 @@ module.exports = async function (deployer, network, accounts) {
         await tools.USDTToWei(usdtc,'90000'),       // dd fee
         accounts[0],                              // address ddAddr_
         accounts[1],                              //  address spvAddr_
-        accounts[2],
+        accounts[2], 
+        accounts[3],                             // owner
         { from: deplorerUser }
     )
 
@@ -144,7 +145,7 @@ module.exports = async function (deployer, network, accounts) {
     const sharePrice = await tools.USDTToWei(usdtc, '24')
     const stakeSharePrice = await tools.USDTToWei(usdtc, '7')
     const firstSharePrice = await tools.USDTToWei(usdtc, '8')
-    const remainSharePrice = await tools.USDTToWei(usdtc, '9')
+    const remainSharePrice = await tools.USDTToWei(usdtc, '16')
 
 
     const whitelistPaymentLimitTime = 1; // 白名单限时

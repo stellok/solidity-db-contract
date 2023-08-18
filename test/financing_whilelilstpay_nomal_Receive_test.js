@@ -117,7 +117,7 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 
-        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt,'10000'), { from: user })
+        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt, '10000'), { from: user })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         const whitelistPaymentTime = await financing.whitelistPaymentTime()
@@ -140,7 +140,7 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
 
-        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt,'10000'), { from: user2 })
+        let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt, '10000'), { from: user2 })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
         const whitelistPaymentTime = await financing.whitelistPaymentTime()
@@ -281,6 +281,35 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         expect(schedule.toNumber()).to.equal(ActionChoices.FINISH)
 
     })
+    //claimRemainBuildFee
+    it("testing claimRemainBuildFee() should assert true", async function () {
+
+        const builderAddr = accounts[2];
+        //builderAddr
+
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+        //addrType.spvAddr
+
+        // usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
+        // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
+
+        const platformFeeAddr = await financing.platformFeeAddr()
+
+        const addrType = await financing.addrType()
+        const feeType = await financing.feeType()
+
+        const origBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+        const origplatformFeeAddrBalance = await tools.balanceOF(usdt.address, platformFeeAddr)
+
+        const tx = await financing.claimRemainBuildFee({ from: builderAddr })
+        assert.equal(tx.receipt.status, true, "claimRemainBuildFee failed !");
+
+        //feeType.spvFee
+        await tools.AssertUSDT(usdt.address, addrType.builderAddr, feeType.remainBuildFee.add(origBalance))
+        await tools.AssertUSDT(usdt.address, platformFeeAddr, feeType.publicSalePlatformFee.add(origplatformFeeAddrBalance))
+
+    })
 
     it("testing spvReceive() should assert true", async function () {
 
@@ -321,10 +350,46 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         tools.AssertUSDT(usdt.address, addrType.electrStakeAddr, feeType.electrStakeFee.add(orgBalance))
     })
 
-    //claimRemainBuildFee
-    it("testing electrStake() should assert true", async function () {
+    //energyReceive
+    it("testing energyReceive() should assert true", async function () {
 
-        const electrStakeAddr = accounts[2];
+
+        await tools.timeout(7000)
+
+        const electrAddr = accounts[2];
+
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+
+
+        const wei = await tools.USDTFromWei(usdt, await tools.balanceOF(usdt.address, financing.address))
+        console.log(`contract balance of ${wei}`)
+
+        const addrType = await financing.addrType()
+        const feeType = await financing.feeType()
+        const limitTimeType = await financing.limitTimeType()
+
+        const electrStartTime = await financing.electrStartTime()
+        console.log(`electrStartTime ${electrStartTime}`)
+        // const origPlatformFeeAddrBalance = await tools.balanceOF(usdt.address, platformFeeAddr)
+        //addrType.builderAddr
+        const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+
+        console.log(`feeType.electrFee ${feeType.electrFee}`)
+        console.log(`limitTimeType.electrIntervalTime ${limitTimeType.electrIntervalTime}`)
+
+        const electrStake = await financing.energyReceive({ from: electrAddr })
+        assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+
+        await tools.printfLogs(electrStake)
+
+        await tools.AssertUSDT(usdt.address, addrType.electrAddr, feeType.electrFee.add(origbuilderAddrBalance))
+        // await tools.AssertUSDT(usdt.address, platformFeeAddr, feeType.feeType.publicSalePlatformFee.add(origPlatformFeeAddrBalance))
+    })
+    //insuranceReceive
+    it("testing insuranceReceive() should assert true", async function () {
+
+        const insuranceAddr = accounts[4];
 
         // usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
         // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
@@ -334,16 +399,14 @@ contract("FinancingTest-whilepay-Receive", (accounts) => {
         const addrType = await financing.addrType()
         const feeType = await financing.feeType()
 
-        const platformFeeAddr = await financing.platformFeeAddr()
-        const origPlatformFeeAddrBalance = await tools.balanceOF(usdt.address, platformFeeAddr)
-        //addrType.builderAddr
-        const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+        //addrType.insuranceAddr
+        const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.insuranceAddr)
 
-        const electrStake = await financing.electrStake({from: electrStakeAddr})
+        const electrStake = await financing.insuranceReceive({ from: insuranceAddr })
         assert.equal(electrStake.receipt.status, true, "electrStake failed !");
 
-        await tools.AssertUSDT(usdt.address, addrType.builderAddr, feeType.remainBuildFee.add(origbuilderAddrBalance))
-        await tools.AssertUSDT(usdt.address, platformFeeAddr, feeType.feeType.publicSalePlatformFee.add(origPlatformFeeAddrBalance))
+        await tools.AssertUSDT(usdt.address, addrType.insuranceAddr, feeType.insuranceFee.add(origbuilderAddrBalance))
+    
 
     })
 })
