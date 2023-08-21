@@ -13,7 +13,6 @@ import "./NFT721Impl.sol";
 interface IBidding {
     //  查看用户状态            // 返回 数量, 状态,
     function viewSubscribe(address) external view returns (uint256);
-
     function transferAmount(uint256 amount) external;
 }
 
@@ -21,23 +20,15 @@ interface IBidding {
 contract Financing is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-
     bool public saleIsActive;
-
-    //type(UniswapV2Pair).creationCode;
-    // bytes public BYTECODE = type(NFT721Impl).creationCode;
-
     IERC20 public usdt;
     NFT721Impl public receiptNFT; // 股权  equityNFT
     NFT721Impl public shareNFT; // 股权  equityNFT
     IBidding public bidding; // 股权  equityNFT
-
     uint256 public constant maxNftAMOUNT = 10;
-
     // 电力质押时间
     bool public electrStakeLock;
     bool public isClaimRemainBuild; // 是否
-
     enum ActionChoices {
         INIT,
         whitelistPayment, // 白名单
@@ -51,7 +42,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     ActionChoices public schedule;
-
     struct AddrType {
         address builderAddr; // 建造人
         address buildInsuranceAddr; // 建造保险地址
@@ -63,24 +53,18 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     AddrType public addrType;
-
     mapping(address => bool) public paidUser; // 实缴用户
-
     LimitTimeType public limitTimeType;
-
     address public platformAddr; //平台管理地址
     address public platformFeeAddr; //平台收款地址
     address public founderAddr; // 创始人
-
     uint256 public issuedTotalShare; //  发行总股数
     uint256 public publicSaleTotalSold; //  第一阶段总数量
-
     uint256 public whitelistPaymentTime; // 白名单开始时间
     uint256 publicSaleTime; // 公售开始时间
     uint256 startBuildTime; //  开始建造时间
     uint256 bargainTime; // 捡漏开始时间
     uint256 public remainPaymentTime; // 白名单开始时间
-
     uint256 public electrStartTime; // 上次电力结算时间
     uint256 operationStartTime; // 上次运维结算时间
     uint256 insuranceStartTime; // 上保险次结算时间
@@ -198,17 +182,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         string memory uri_1,
         string memory uri_2
     ) {
-        //        grantRole(MINTER_ROLE, _msgSender());
-
         whitelistPaymentTime = block.timestamp;
-
         saleIsActive = false;
-
         shareType = shareList_;
         addrType = addrList_;
         limitTimeType = limitTimeList_;
         feeType = feeList_;
-
         // feeList_ field check
         require(feeList_.firstBuildFee != 0, "firstBuildFee == 0"); //首次建造款
         require(feeList_.remainBuildFee != 0, "remainBuildFee == 0"); //剩余建造款
@@ -244,13 +223,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
         address receiptAddr = deployNFT("DB", "DB");
         address shareAddr = deployNFT("shareNFT", "shareNFT");
-
         receiptNFT = NFT721Impl(receiptAddr);
         receiptNFT.setBaseURI(uri_1);
-
         shareNFT = NFT721Impl(shareAddr);
         shareNFT.setBaseURI(uri_2);
-
         bidding = bidding_;
         usdt = usdtAddr_;
         schedule = ActionChoices.whitelistPayment;
@@ -261,14 +237,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         string memory symbol_
     ) public returns (address) {
         bytes memory bytecode = type(NFT721Impl).creationCode;
-
         bytes memory initCode = abi.encodePacked(
             bytecode,
             abi.encode(name_, symbol_)
         );
-
         bytes32 shareSalt = keccak256(abi.encodePacked(address(this), "share"));
-
         address deployedContract;
         assembly {
             deployedContract := create2(
@@ -287,7 +260,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
         require(shareType.financingShare > publicSaleTotalSold, "sold out");
         require(!paidUser[_msgSender()], " Cannot participate repeatedly"); //  不能重复参与
-
         paidUser[_msgSender()] = true;
         //  不能小于零
         require(
@@ -295,10 +267,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 block.timestamp,
             "time expired"
         );
-
         //  查看招投标合约用户质押状态 数量, 状态,
         uint256 amount = bidding.viewSubscribe(_msgSender());
-
         // 必须为锁定状态
         require(amount > 0, "Not yet subscribed");
         // 数量 大于0
@@ -306,24 +276,20 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             amount = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount;
-
         uint256 gAmout = amount * shareType.stakeSharePrice;
         bidding.transferAmount(gAmout);
-
         // 同时通知招投标合约释放押金
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
             amount * (shareType.firstSharePrice - shareType.stakeSharePrice)
         );
-
         emit whiteListPaymentLog(
             _msgSender(),
             amount,
             (shareType.firstSharePrice - shareType.stakeSharePrice),
             block.timestamp
         );
-
         // 铸造凭证 nft
         receiptNFT.mint(_msgSender(), amount);
         _whetherFirstPaymentFinish();
@@ -341,14 +307,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     // 检查第一次实缴是否成功
     function checkWhiteList() public nonReentrant {
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
-
         require(
             whitelistPaymentTime + limitTimeType.whitelistPaymentLimitTime <
                 block.timestamp &&
                 whitelistPaymentTime != 0,
             "time expired"
         );
-
         if (publicSaleTotalSold < shareType.financingShare) {
             uint256 unpaid = shareType.financingShare - publicSaleTotalSold;
             schedule = ActionChoices.publicSale;
@@ -382,25 +346,20 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             shareType.firstSharePrice > shareType.stakeSharePrice,
             "firstSharePrice > stakeSharePrice"
         );
-
         if (shareType.financingShare - publicSaleTotalSold < amount_) {
             amount_ = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount_;
         uint256 mAmount = amount_ *
             (shareType.firstSharePrice - shareType.stakeSharePrice);
-
         uint256 gAmout = amount_ * shareType.stakeSharePrice;
-
         bidding.transferAmount(gAmout);
-
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
             mAmount //
         );
         emit publicSaleLog(_msgSender(), amount_, mAmount, block.timestamp);
-
         // 铸造nft
         receiptNFT.mint(_msgSender(), amount_);
         _whetherFirstPaymentFinish();
@@ -414,7 +373,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 block.timestamp,
             "time expired"
         );
-
         if (shareType.financingShare <= publicSaleTotalSold) {
             _whetherFirstPaymentFinish();
         } else {
@@ -432,7 +390,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             "not publicSaleFailed status"
         );
         require(tokenIdList.length <= maxNftAMOUNT, "tokenIdList lenght >= 10");
-
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
@@ -449,7 +406,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
             emit redeemPublicSaleLog(tokenIdList[i], shareType.firstSharePrice);
         }
-
         usdt.safeTransfer(
             _msgSender(),
             tokenIdList.length * shareType.firstSharePrice
@@ -459,9 +415,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     // 领取首次建造费
     function claimFirstBuildFee() public nonReentrant {
         require(addrType.builderAddr == _msgSender(), "permission denied");
-        //
         require(schedule == ActionChoices.startBuild, "not startBuild status");
-
         // 首次费用
         usdt.safeTransfer(addrType.builderAddr, feeType.firstBuildFee);
         // 给平台打钱
@@ -517,7 +471,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             address(this),
             tokenIdList.length * shareType.remainSharePrice
         );
-
         emit remainPaymentLog(
             _msgSender(),
             tokenIdList.length,
@@ -536,14 +489,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             emit whetherFinishLog(true, block.timestamp);
         }
     }
-
     // 检查尾款是否成功
     function checkRemainPayment() public nonReentrant {
         require(
             schedule == ActionChoices.remainPayment,
             "not remainPayment status"
         );
-
         //TODO
         require(
             remainPaymentTime + limitTimeType.remainPaymentLimitTime >
@@ -551,7 +502,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             "RemainPayment time is not up"
         ); // 时间未到
         // 时间到期
-
         if (issuedTotalShare < shareType.financingShare) {
             bargainTime = block.timestamp;
             schedule = ActionChoices.Bargain;
@@ -575,13 +525,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             amount_ <= maxNftAMOUNT && amount_ > 0,
             "amount Limit Exceeded"
         );
-
         //  不能小于零
         require(
             bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
             "time expired"
         );
-
         // 余额不足
         uint256 balance = shareType.financingShare - issuedTotalShare;
         require(balance > 0, "Sold out");
@@ -590,13 +538,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
         issuedTotalShare += amount_;
         shareNFT.mint(_msgSender(), amount_);
-
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
             amount_ * shareType.remainSharePrice
         );
-
         _whetherFinish();
         emit remainBargainLog(
             _msgSender(),
@@ -609,7 +555,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     // 检查捡漏
     function checkBargain() public nonReentrant {
         require(schedule == ActionChoices.Bargain, "not PAID status");
-
         //  不能小于零
         require(
             bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
@@ -655,10 +600,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         require(_msgSender() == addrType.builderAddr, "permission denied");
         require(schedule == ActionChoices.FINISH, "not FINISH status");
         require(isClaimRemainBuild == false, "Can not receive repeatedly"); //  不能能重复领取
-
         usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
         usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
-
         isClaimRemainBuild = true;
         operationStartTime = block.timestamp;
         electrStartTime = block.timestamp;
@@ -681,7 +624,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 block.timestamp,
             "Refusal to contract transactions"
         );
-
         // 判断第一次领取 需要质押电力 // 3000
         uint256 months = block.timestamp -
             (operationStartTime + limitTimeType.operationIntervalTime) /
@@ -690,7 +632,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount = months * feeType.operationsFee;
         operationStartTime += months * limitTimeType.operationIntervalTime;
         usdt.safeTransfer(addrType.operationsAddr, amount);
-
         emit operationsReceiveLog(_msgSender(), amount, block.timestamp);
     }
 
@@ -719,7 +660,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             spvStartTime += year * limitTimeType.spvIntervalTime;
             usdt.safeTransfer(addrType.spvAddr, amount);
         }
-
         emit spvReceiveLog(addrType.spvAddr, amount, block.timestamp);
     }
 
@@ -735,7 +675,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         // 判断第一次领取 需要质押电力  todo 时间计算公式
         electrStakeLock = true;
         usdt.safeTransfer(addrType.electrStakeAddr, feeType.electrStakeFee);
-
         emit electrStakeLog(
             addrType.electrStakeAddr,
             feeType.electrStakeFee,
@@ -759,7 +698,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         // 判断第一次领取 需要质押电力
         uint256 months = (block.timestamp - electrStartTime) /
             limitTimeType.electrIntervalTime;
-
         uint256 amount = months * feeType.electrFee;
         electrStartTime += months * limitTimeType.electrIntervalTime;
         // 判断第一次押金
@@ -793,7 +731,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             insuranceStartTime += year * limitTimeType.insuranceIntervalTime;
             usdt.safeTransfer(addrType.insuranceAddr, amount);
         }
-
         emit insuranceReceiveLog(
             addrType.insuranceAddr,
             amount,

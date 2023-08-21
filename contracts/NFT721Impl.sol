@@ -156,12 +156,10 @@ contract NFT721Impl is
     function approve(address to, uint256 tokenId) public virtual override {
         address owner = NFT721Impl.ownerOf(tokenId);
         require(to != owner, "ERC721: approval to current owner");
-
         require(
             _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
             "ERC721: approve caller is not token owner or approved for all"
         );
-
         _approve(to, tokenId);
     }
 
@@ -172,7 +170,6 @@ contract NFT721Impl is
         uint256 tokenId
     ) public view virtual override returns (address) {
         _requireMinted(tokenId);
-
         return _tokenApprovals[tokenId];
     }
 
@@ -290,12 +287,9 @@ contract NFT721Impl is
     function _mint(address to, uint256 tokenId) internal virtual {
         require(to != address(0), "ERC721: mint to the zero address");
         require(!_exists(tokenId), "ERC721: token already minted");
-
         _beforeTokenTransfer(address(0), to, tokenId, 1);
-
         // Check that tokenId was not minted by `_beforeTokenTransfer` hook
         require(!_exists(tokenId), "ERC721: token already minted");
-
         unchecked {
             // Will not overflow unless all 2**256 token ids are minted to the same owner.
             // Given that tokens are minted one by one, it is impossible in practice that
@@ -303,34 +297,25 @@ contract NFT721Impl is
             // The ERC fails to describe this case.
             _balances[to] += 1;
         }
-
         _owners[tokenId] = to;
-
         emit Transfer(address(0), to, tokenId);
-
         _afterTokenTransfer(address(0), to, tokenId, 1);
     }
 
     function _burn(uint256 tokenId) internal virtual {
         address owner = NFT721Impl.ownerOf(tokenId);
-
         _beforeTokenTransfer(owner, address(0), tokenId, 1);
-
         // Update ownership in case tokenId was transferred by `_beforeTokenTransfer` hook
         owner = NFT721Impl.ownerOf(tokenId);
-
         // Clear approvals
         delete _tokenApprovals[tokenId];
-
         unchecked {
             // Cannot overflow, as that would require more tokens to be burned/transferred
             // out than the owner initially received through minting and transferring in.
             _balances[owner] -= 1;
         }
         delete _owners[tokenId];
-
         emit Transfer(owner, address(0), tokenId);
-
         _afterTokenTransfer(owner, address(0), tokenId, 1);
     }
 
@@ -344,18 +329,14 @@ contract NFT721Impl is
             "ERC721: transfer from incorrect owner"
         );
         require(to != address(0), "ERC721: transfer to the zero address");
-
         _beforeTokenTransfer(from, to, tokenId, 1);
-
         // Check that tokenId was not transferred by `_beforeTokenTransfer` hook
         require(
             NFT721Impl.ownerOf(tokenId) == from,
             "ERC721: transfer from incorrect owner"
         );
-
         // Clear approvals from the previous owner
         delete _tokenApprovals[tokenId];
-
         unchecked {
             // `_balances[from]` cannot overflow for the same reason as described in `_burn`:
             // `from`'s balance is the number of token held, which is at least one before the current
@@ -366,9 +347,7 @@ contract NFT721Impl is
             _balances[to] += 1;
         }
         _owners[tokenId] = to;
-
         emit Transfer(from, to, tokenId);
-
         _afterTokenTransfer(from, to, tokenId, 1);
     }
 

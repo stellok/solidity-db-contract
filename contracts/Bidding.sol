@@ -137,11 +137,9 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) {
         _setRoleAdmin(ADMIN, OWNER);
         _setRoleAdmin(PLATFORM, ADMIN);
-
         _setupRole(PLATFORM, _msgSender());
         _setupRole(ADMIN, adminAddr_);
         _setupRole(OWNER, owner_);
-
         ddFee = ddFee_; //  尽调费
         DDAddr = ddAddr_; //矿场提供方
         platformAddr = _msgSender(); // 平台管理
@@ -340,9 +338,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired");
         require(miner[_msgSender()].exist == true, "participated");
-
-        //require(stakeAmount > miner[_msgSender()].amount, "participated");
-
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -352,15 +347,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
                 expire
             )
         );
-
         _checkRole(
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
-
         usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount);
         miner[_msgSender()].stakeAmount = stakeAmount;
-        // miner[_msgSender()].amount = 0;
         emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
     }
 
@@ -377,7 +369,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             "amount invalid"
         );
         require(expire > block.timestamp, "not yet expired"); //
-
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -388,16 +379,13 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
                 nonce
             )
         );
-
         _checkRole(
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
-
         miner[_msgSender()].stakeAmount -= amount;
         miner[_msgSender()].nonce += 1;
         usdt.safeTransfer(_msgSender(), amount);
-
         emit unMinerStakeLog(_msgSender(), amount, block.timestamp);
     }
 
@@ -411,7 +399,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired"); // 还没到期
         require(companyList[role].exist == false, "participated"); // 参与过了
-
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -427,7 +414,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
-
         companyList[role].totalAmount = totalAmount;
         companyList[role].stakeAmount = stakeAmount;
         companyList[role].exist = true;
@@ -443,7 +429,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             companyList[role].unStake == false,
             "cannot be repeated unStake"
         );
-
         companyList[role].unStake = true;
         usdt.safeTransfer(
             companyList[role].addr,
