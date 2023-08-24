@@ -67,6 +67,7 @@ contract Dividends is ReentrancyGuard {
 
         if (block.timestamp >= lastExecuted + expire) {
             lastExecuted = block.timestamp;
+            monthlyList.push(lastExecuted);
         }
         monthlyInfo[lastExecuted] += amount;
         emit paymentLog(lastExecuted, amount, block.timestamp);
