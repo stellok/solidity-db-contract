@@ -36,6 +36,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeAmount; // 退回
         uint256 nonce; // 退回 ++
         bool unStake; // 退回
+        bool hadStaked;
         bool exist; // 存在
     }
 
@@ -320,6 +321,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes32 msgSplice = keccak256(
             abi.encodePacked(_msgSender(), expire, address(this), "dfb08b8d")
         );
+        
         _checkRole(
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
@@ -338,6 +340,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired");
         require(miner[_msgSender()].exist == true, "participated");
+        require(miner[_msgSender()].hadStaked == false, "participated"); // 参与过了
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -353,6 +356,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
         usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount);
         miner[_msgSender()].stakeAmount = stakeAmount;
+        miner[_msgSender()].hadStaked = true;
         emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
     }
 
