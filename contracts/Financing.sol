@@ -8,23 +8,31 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./NFT721Impl.sol";
+import "./Dividends.sol";
 
 //interface IBidding { tender.sol
 interface IBidding {
     //  查看用户状态            // 返回 数量, 状态,
     function viewSubscribe(address) external view returns (uint256);
+
     function transferAmount(uint256 amount) external;
 }
 
 // 股权融资
 contract Financing is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    bytes32 public constant ADMIN = keccak256("ADMIN"); // 平台
+    bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
+
     bool public saleIsActive;
     IERC20 public usdt;
     NFT721Impl public receiptNFT; // 股权  equityNFT
     NFT721Impl public shareNFT; // 股权  equityNFT
     IBidding public bidding; // 股权  equityNFT
+
+    address public dividends;
+
     uint256 public constant maxNftAMOUNT = 10;
     // 电力质押时间
     bool public electrStakeLock;
@@ -151,7 +159,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     );
     event redeemPublicSaleLog(uint256 tokenId_, uint256 amount_);
 
-    event energyReceiveLog(address addr, uint256 mouth, uint256 amount_, uint256 time_);
+    event energyReceiveLog(
+        address addr,
+        uint256 mouth,
+        uint256 amount_,
+        uint256 time_
+    );
     event startPublicSaleLog(uint256 unpaid_, uint256 time_);
     event startBargainLog(uint256 unpaid_, uint256 time_);
     event publicSaleLog(
@@ -176,9 +189,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         address platformFeeAddr_,
         address founderAddr_,
         FeeType memory feeList_, // fees
-        AddrType memory addrList_, // address  集合 //TODO check
-        LimitTimeType memory limitTimeList_, // times  集合 //TODO check
-        ShareType memory shareList_, // Share  集合 //TODO check
+        AddrType memory addrList_, // address  集合
+        LimitTimeType memory limitTimeList_, // times  集合
+        ShareType memory shareList_, // Share  集合
         string memory uri_1,
         string memory uri_2
     ) {
@@ -230,12 +243,49 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         bidding = bidding_;
         usdt = usdtAddr_;
         schedule = ActionChoices.whitelistPayment;
+
+        _setRoleAdmin(PLATFORM, ADMIN);
+        _setupRole(PLATFORM, _msgSender());
+    }
+
+    function deployDividends(
+        uint256 financingFee,
+        address financingAddr,
+        uint256 totalShares,
+        uint256 expire
+    ) internal returns (address) {
+        bytes memory bytecode = type(Dividends).creationCode;
+        bytes memory initCode = abi.encodePacked(
+            bytecode,
+            abi.encode(
+                usdt,
+                shareNFT,
+                financingFee,
+                financingAddr,
+                totalShares,
+                expire,
+                feeType,
+                addrType,
+                limitTimeType
+            )
+        );
+        bytes32 shareSalt = keccak256(abi.encodePacked(address(this), "share"));
+        address deployedContract;
+        assembly {
+            deployedContract := create2(
+                0,
+                add(initCode, 32),
+                mload(initCode),
+                shareSalt
+            )
+        }
+        return deployedContract;
     }
 
     function deployNFT(
         string memory name_,
         string memory symbol_
-    ) public returns (address) {
+    ) internal returns (address) {
         bytes memory bytecode = type(NFT721Impl).creationCode;
         bytes memory initCode = abi.encodePacked(
             bytecode,
@@ -489,6 +539,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             emit whetherFinishLog(true, block.timestamp);
         }
     }
+
     // 检查尾款是否成功
     function checkRemainPayment() public nonReentrant {
         require(
@@ -612,130 +663,21 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    // 运维 领取 30天一次
-    function operationsReceive() public nonReentrant {
-        require(
-            _msgSender() == addrType.operationsAddr,
-            "user does not have permission"
-        );
+    function checkDone(
+        uint256 financingFee,
+        address financingAddr,
+        uint256 totalShares,
+        uint256 expire
+    ) public nonReentrant onlyRole(PLATFORM) {
         require(schedule == ActionChoices.FINISH, "not FINISH status");
-        require(
-            operationStartTime + limitTimeType.operationIntervalTime <
-                block.timestamp,
-            "Refusal to contract transactions"
+        require(isClaimRemainBuild == true, "no ClaimRemainBuild");
+        dividends = deployDividends(
+            financingFee,
+            financingAddr,
+            totalShares,
+            expire
         );
-        // 判断第一次领取 需要质押电力 // 3000
-        uint256 months = block.timestamp -
-            (operationStartTime + limitTimeType.operationIntervalTime) /
-            limitTimeType.operationIntervalTime;
-
-        uint256 amount = months * feeType.operationsFee;
-        operationStartTime += months * limitTimeType.operationIntervalTime;
-        usdt.safeTransfer(addrType.operationsAddr, amount);
-        emit operationsReceiveLog(_msgSender(), amount, block.timestamp);
-    }
-
-    //  spv 领取
-    function spvReceive() public nonReentrant {
-        require(
-            _msgSender() == addrType.spvAddr,
-            "user does not have permission"
-        );
-        require(schedule == ActionChoices.FINISH, "not FINISH status");
-        // 判断状态
-        uint256 amount;
-        if (spvStartTime == 0) {
-            amount = feeType.spvFee;
-            usdt.safeTransfer(addrType.spvAddr, amount);
-            spvStartTime = block.timestamp;
-        } else {
-            require(
-                spvStartTime + limitTimeType.spvIntervalTime < block.timestamp,
-                "Refusal to contract transactions"
-            );
-            uint256 year = (block.timestamp - spvStartTime) /
-                limitTimeType.spvIntervalTime;
-
-            amount = year * feeType.spvFee;
-            spvStartTime += year * limitTimeType.spvIntervalTime;
-            usdt.safeTransfer(addrType.spvAddr, amount);
-        }
-        emit spvReceiveLog(addrType.spvAddr, amount, block.timestamp);
-    }
-
-    //  押金
-    function electrStake() public nonReentrant {
-        require(
-            _msgSender() == addrType.electrStakeAddr,
-            "user does not have permission"
-        );
-        // 用户没有权限
-        require(schedule == ActionChoices.FINISH, "not RUNNING status");
-        require(electrStakeLock == false, "not FINISH status");
-        // 判断第一次领取 需要质押电力  todo 时间计算公式
-        electrStakeLock = true;
-        usdt.safeTransfer(addrType.electrStakeAddr, feeType.electrStakeFee);
-        emit electrStakeLog(
-            addrType.electrStakeAddr,
-            feeType.electrStakeFee,
-            block.timestamp
-        );
-    }
-
-    // 电力领取  30天一次
-    function energyReceive() public nonReentrant {
-        require(
-            _msgSender() == addrType.electrAddr,
-            "user does not have permission"
-        );
-        // 用户没有权限
-        require(schedule == ActionChoices.FINISH, "not FINISH status");
-        require(
-            electrStartTime + limitTimeType.electrIntervalTime <
-                block.timestamp,
-            "Refusal to contract transactions"
-        );
-        // 判断第一次领取 需要质押电力
-        uint256 months = (block.timestamp - electrStartTime) /
-            limitTimeType.electrIntervalTime;
-        uint256 amount = months * feeType.electrFee;
-        electrStartTime += months * limitTimeType.electrIntervalTime;
-        // 判断第一次押金
-        usdt.safeTransfer(addrType.electrAddr, amount);
-        emit energyReceiveLog(addrType.electrAddr,months, amount, block.timestamp);
-    }
-
-    // 保险领取  一年一次
-    function insuranceReceive() public nonReentrant {
-        require(
-            _msgSender() == addrType.insuranceAddr,
-            "user does not have permission"
-        );
-        // 不能
-        require(schedule == ActionChoices.FINISH, "not FINISH status");
-        uint256 amount;
-        if (insuranceStartTime == 0) {
-            amount = feeType.insuranceFee;
-            usdt.safeTransfer(addrType.insuranceAddr, amount);
-            insuranceStartTime = block.timestamp;
-        } else {
-            require(
-                insuranceStartTime + limitTimeType.insuranceIntervalTime <
-                    block.timestamp,
-                "Refusal to contract transactions"
-            );
-            uint256 year = (block.timestamp - insuranceStartTime) /
-                limitTimeType.insuranceIntervalTime;
-
-            amount = year * feeType.insuranceFee;
-            insuranceStartTime += year * limitTimeType.insuranceIntervalTime;
-            usdt.safeTransfer(addrType.insuranceAddr, amount);
-        }
-        emit insuranceReceiveLog(
-            addrType.insuranceAddr,
-            amount,
-            block.timestamp
-        );
+        usdt.safeTransfer(dividends, usdt.balanceOf(address(this)));
     }
 
     function getChoice() public view returns (ActionChoices) {

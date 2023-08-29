@@ -138,7 +138,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) {
         _setRoleAdmin(ADMIN, OWNER);
         _setRoleAdmin(PLATFORM, ADMIN);
-        _setupRole(PLATFORM, _msgSender());
+        _setupRole(PLATFORM, _msgSender());//TODO _msgSender
         _setupRole(ADMIN, adminAddr_);
         _setupRole(OWNER, owner_);
         ddFee = ddFee_; //  尽调费
