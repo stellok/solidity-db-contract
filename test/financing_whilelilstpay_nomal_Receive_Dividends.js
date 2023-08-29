@@ -336,7 +336,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         await axios.post('/cache/abi', { contract: dividends, abi: JSON.stringify(Dividends.abi) })
     })
 
-    it("testing payment() should assert true", async function () {
+    const payment = async function () {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
         const dividends = await Dividends.at(await financing.dividends());
@@ -346,7 +346,9 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         console.log(`payment tx ${tx.tx}`)
         const lastExecuted = await dividends.lastExecuted()
         console.log((`lastExecuted ${lastExecuted}`))
-    })
+    }
+
+    it("testing payment() should assert true", payment)
 
     //doMonthlyTask
     it("testing doMonthlyTask() should assert true", async function () {
@@ -365,6 +367,8 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         assert.equal(tx.receipt.status, true, "doMonthlyTask failed !");
         console.log(`doMonthlyTask hash ${tx.tx}`)
     })
+
+    it("testing payment_index() should assert true", payment)
 
     const receiveDividends = async function () {
 
@@ -418,7 +422,6 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         try {
             await receiveDividends()
         } catch (error) {
-            console.log(error)
             assert(error.message.includes("Cannot be claimed repeatedly"), "Expected an error with message 'Error message'.");
         }
     })

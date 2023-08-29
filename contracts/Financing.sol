@@ -370,7 +370,15 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
     }
 
-    
+    function publicSaleEstimate(uint256 amount_) public view returns (uint256) {
+        if (shareType.financingShare - publicSaleTotalSold < amount_) {
+            amount_ = shareType.financingShare - publicSaleTotalSold;
+        }
+        uint256 mAmount = amount_ *
+            (shareType.firstSharePrice - shareType.stakeSharePrice);
+        return mAmount;
+    }
+
     // 公售
     // @param amount_股数
     function publicSale(uint256 amount_) public nonReentrant {
@@ -462,7 +470,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
     // 领取首次建造费
     function claimFirstBuildFee() public nonReentrant {
-        require(addrType.builderAddr == _msgSender(), "permission denied");
+        require(platformAddr == _msgSender(), "permission denied");
         require(schedule == ActionChoices.startBuild, "not startBuild status");
         // 首次费用
         usdt.safeTransfer(addrType.builderAddr, feeType.firstBuildFee);
@@ -669,6 +677,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     ) public nonReentrant {
         require(_msgSender() == platformAddr, "only allow platformAddr call");
         require(schedule == ActionChoices.FINISH, "not FINISH status");
+        require(dividends == address(0), "contract had deployed!");
         // require(isClaimRemainBuild == true, "no ClaimRemainBuild");
         dividends = deployDividends(
             financingFee,
