@@ -28,14 +28,14 @@ contract Dividends is AccessControl, ReentrancyGuard {
 
     event paymentLog(uint256 index, uint256 amount, uint256 time);
     event doMonthlyTaskLog(
-        uint256 monthlyTime,
+        uint256 index,
         uint256 totalMonthlyBalance,
         uint256 dividend,
         uint256 time
     );
     event receiveDividendsLog(
         address addr,
-        uint256 monthlyTime,
+        uint256 index,
         uint256[] tokenList,
         uint256 amount,
         uint256 time
@@ -96,9 +96,13 @@ contract Dividends is AccessControl, ReentrancyGuard {
         address financingAddr_,
         uint256 totalShares_,
         uint256 expire_,
+        uint256 operationStartTime_,
+        uint256 spvStartTime_,
+        uint256 electrStartTime_,
+        uint256 insuranceStartTime_,
         FeeType memory feeList_, // fees
-        AddrType memory addrList_, // address  集合 
-        LimitTimeType memory limitTimeList_// times 集合 
+        AddrType memory addrList_, // address  集合
+        LimitTimeType memory limitTimeList_ // times 集合
     ) {
         USDT = usdt;
         NFT = nft;
@@ -108,17 +112,15 @@ contract Dividends is AccessControl, ReentrancyGuard {
         lastExecuted = block.timestamp;
         expire = expire_;
 
-        operationStartTime = lastExecuted;
-        spvStartTime = lastExecuted;
-        electrStartTime = lastExecuted;
-        insuranceStartTime = lastExecuted;
+        operationStartTime = operationStartTime_;
+        spvStartTime = spvStartTime_;
+        electrStartTime = electrStartTime_;
+        insuranceStartTime = insuranceStartTime_;
 
         addrType = addrList_;
         limitTimeType = limitTimeList_;
         feeType = feeList_;
     }
-
-
 
     event operationsReceiveLog(address addr_, uint256 amount_, uint256 time_);
     event spvReceiveLog(address addr_, uint256 amount_, uint256 time_);
@@ -189,7 +191,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
                 "Cannot be claimed repeatedly"
             ); // 无法重复领取
 
-            receiveRecord[index].isReceive[tokenList[i]] == true;
+            receiveRecord[index].isReceive[tokenList[i]] = true;
             receiveRecord[index].totalMonthlyBalance -= receiveRecord[index]
                 .dividend;
         }
@@ -337,5 +339,9 @@ contract Dividends is AccessControl, ReentrancyGuard {
 
     function phaseIndex() public view returns (uint256) {
         return (block.timestamp - lastExecuted) / expire;
+    }
+
+    function isReceive(uint256 index,uint256 tokenId) public view returns (bool) {
+        return receiveRecord[index].isReceive[tokenId];
     }
 }

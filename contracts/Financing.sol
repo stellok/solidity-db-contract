@@ -21,10 +21,6 @@ interface IBidding {
 // 股权融资
 contract Financing is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
-
-    bytes32 public constant ADMIN = keccak256("ADMIN"); // 平台
-    bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
-
     bool public saleIsActive;
     IERC20 public usdt;
     NFT721Impl public receiptNFT; // 股权  equityNFT
@@ -243,9 +239,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         bidding = bidding_;
         usdt = usdtAddr_;
         schedule = ActionChoices.whitelistPayment;
-
-        _setRoleAdmin(PLATFORM, ADMIN);
-        _setupRole(PLATFORM, _msgSender());
     }
 
     function deployDividends(
@@ -264,6 +257,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 financingAddr,
                 totalShares,
                 expire,
+                operationStartTime,
+                spvStartTime,
+                electrStartTime,
+                insuranceStartTime,
                 feeType,
                 addrType,
                 limitTimeType
@@ -373,6 +370,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
     }
 
+    
     // 公售
     // @param amount_股数
     function publicSale(uint256 amount_) public nonReentrant {
@@ -668,9 +666,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         address financingAddr,
         uint256 totalShares,
         uint256 expire
-    ) public nonReentrant onlyRole(PLATFORM) {
+    ) public nonReentrant {
+        require(_msgSender() == platformAddr, "only allow platformAddr call");
         require(schedule == ActionChoices.FINISH, "not FINISH status");
-        require(isClaimRemainBuild == true, "no ClaimRemainBuild");
+        // require(isClaimRemainBuild == true, "no ClaimRemainBuild");
         dividends = deployDividends(
             financingFee,
             financingAddr,

@@ -6,6 +6,7 @@ const Dividends = artifacts.require("Dividends");
 const { net } = require('web3');
 const tools = require('../tools/web3-utils');
 const BN = require('bn.js');//Dividends
+const axios = require('axios');
 
 
 module.exports = async function (deployer, network, accounts) {
@@ -24,7 +25,7 @@ module.exports = async function (deployer, network, accounts) {
         console.log(`USDT contract : ${usdtContract.address}`)
         const usdtBalance = await usdtContract.balanceOf(accounts[0]);
         console.log(`owner : ${accounts[0]}`)
-        console.log(`Owner USDT Balance: ${await tools.USDTFromWei(usdtContract,usdtBalance)}`)
+        console.log(`Owner USDT Balance: ${await tools.USDTFromWei(usdtContract, usdtBalance)}`)
         usdt = usdtContract.address
     }
 
@@ -41,17 +42,17 @@ module.exports = async function (deployer, network, accounts) {
 
     const usdtc = await USDT.at(usdt)
 
-    
+
     //deploy bidding
     await deployer.deploy(Bidding,
         usdt,                                     // IERC20 usdtAddr_
         accounts[0],                              // address founderAddr_
         accounts[0],                              // address adminAddr_
-        await tools.USDTToWei(usdtc,'10000'),       // service fee
-        await tools.USDTToWei(usdtc,'90000'),       // dd fee
+        await tools.USDTToWei(usdtc, '10000'),       // service fee
+        await tools.USDTToWei(usdtc, '90000'),       // dd fee
         accounts[0],                              // address ddAddr_
         accounts[1],                              //  address spvAddr_
-        accounts[2], 
+        accounts[2],
         accounts[3],                             // owner
         { from: deplorerUser }
     )
@@ -111,7 +112,7 @@ module.exports = async function (deployer, network, accounts) {
     //  shareType.sharePrice] == shareList[shareType.stakeSharePrice] +shareList[shareType.firstSharePrice] +shareList[shareType. remainSharePrice
     //  shareType.totalShare] == shareList[shareType.financingShare] +shareList[shareType.founderShare] + shareList[shareType.platformShare
 
-    
+
 
     const builderAddr = accounts[2]; // 建造人
     const buildInsuranceAddr = accounts[3]; // 建造保险地址
@@ -198,20 +199,12 @@ module.exports = async function (deployer, network, accounts) {
     // address financingAddr_,
     // uint256 totalShares_
 
-    const financingFee_ = tools.USDTToWei(usdtc, '12')
-
-    await deployer.deploy(Dividends,
-        usdtc.address,
-        receiptNFT,
-        financingFee_,
-        accounts[7],
-        100000,
-        12,                                   //expire_
-        { from: deplorerUser }                //overwrite: false
-    )
-
-    const divid = await Dividends.deployed()
-    console.log(`dividends contract ${divid.address}`)
-
-
+    axios.defaults.baseURL = 'http://192.168.1.115:8088';
+    await axios.post('/cache/abi', { contract: usdt, abi: JSON.stringify(USDT.abi), include: 'contract' })
+    await axios.post('/cache/abi', { contract: bidContract.address, abi: JSON.stringify(bidContract.abi) })
+    await axios.post('/cache/abi', { contract: FinancingContract.address, abi: JSON.stringify(FinancingContract.abi) })
+    await axios.post('/cache/abi', { contract: receiptNFT, abi: JSON.stringify(NFTImpl.abi) })
+    await axios.post('/cache/abi', { contract: shareNFT, abi: JSON.stringify(NFTImpl.abi) })
+    // await axios.post('/cache/abi', { contract: divid.address, abi: JSON.stringify(Dividends.abi) })
+    console.log('regist end')
 };
