@@ -10,8 +10,6 @@ contract Dividends is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
     IERC20 public USDT;
     IERC721 public NFT;
-    uint256 public FinancingFee;
-    address public FinancingAddr;
     uint256 public expire;
     uint256 public totalShares;
     uint256 public lastExecuted;
@@ -92,8 +90,6 @@ contract Dividends is AccessControl, ReentrancyGuard {
     constructor(
         IERC20 usdt,
         IERC721 nft,
-        uint256 financingFee_,
-        address financingAddr_,
         uint256 totalShares_,
         uint256 expire_,
         uint256 operationStartTime_,
@@ -106,8 +102,6 @@ contract Dividends is AccessControl, ReentrancyGuard {
     ) {
         USDT = usdt;
         NFT = nft;
-        FinancingFee = financingFee_;
-        FinancingAddr = financingAddr_;
         totalShares = totalShares_;
         lastExecuted = block.timestamp;
         expire = expire_;
@@ -152,9 +146,9 @@ contract Dividends is AccessControl, ReentrancyGuard {
         require(index < phaseIndex(), "index must < current phase");
         require(monthlyInfo[index] > 0, "this Phase total amount is 0");
         require(receiveRecord[index].exist == false, "has been comforted");
-        uint256 total = monthlyInfo[index] - FinancingFee;
+        uint256 total = monthlyInfo[index];
         receiveRecord[index].exist = true;
-        USDT.safeTransfer(FinancingAddr, FinancingFee);
+        // USDT.safeTransfer(FinancingAddr, FinancingFee);
         receiveRecord[index].totalMonthlyBalance = total;
         receiveRecord[index].dividend = total / totalShares;
         emit doMonthlyTaskLog(

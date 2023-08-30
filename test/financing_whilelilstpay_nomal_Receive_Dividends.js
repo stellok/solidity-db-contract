@@ -187,7 +187,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         const totalUSDT = await tools.USDTFromWei(usdt, total)
         console.log(`contract total ${totalUSDT} USDT`)
 
-        const tx = await financing.claimFirstBuildFee({ from: accounts[2] });
+        const tx = await financing.claimFirstBuildFee({ from: accounts[0] });
         assert.equal(tx.receipt.status, true, "claimFirstBuildFee failed !");
 
         const addrType = await financing.addrType()
@@ -327,8 +327,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
     it("testing checkDone should assert true", async function () {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
-        const financingFee_ = await tools.USDTToWei(usdt, '12')
-        const tx = await financing.checkDone(financingFee_, accounts[7], 100000, 30)
+        const tx = await financing.checkDone()
         assert.equal(tx.receipt.status, true, "checkDone failed !");
         console.log(`tx ${tx.tx}`)
         const dividends = await financing.dividends()
@@ -426,5 +425,109 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         }
     })
 
+    const spvReceive = async function () {
 
+        const caller = accounts[2]
+        const financing = await Financing.deployed()
+        const dividends = await Dividends.at(await financing.dividends());
+        const usdt = await USDTTest.deployed();
+        //addrType.spvAddr
+        const addrType = await dividends.addrType()
+        const spvBalance = await tools.balanceOF(usdt.address, addrType.spvAddr)
+        const feeType = await dividends.feeType()
+        const tx = await dividends.spvReceive({ from: caller })
+
+        //feeType.spvFee
+        await tools.AssertUSDT(usdt.address, addrType.spvAddr, feeType.spvFee.add(spvBalance))
+
+    }
+    it("testing spvReceive() should assert true", spvReceive)
+
+    // const electrStake =async function () {
+
+    //     const electrStakeAddr = accounts[2];
+    //     //addrType.electrStakeAddr, feeType.electrStakeFee
+    //     const financing = await Financing.deployed()
+    //     const dividends = await Dividends.at(await financing.dividends());
+    //     const usdt = await USDTTest.deployed();
+
+    //     const addrType = await financing.addrType()
+
+    //     const feeType = await financing.feeType()
+    //     const orgBalance = await tools.balanceOF(usdt.address, addrType.electrStakeAddr)
+    //     const electrStake = await dividends.electrStake({ from: electrStakeAddr })
+    //     assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+
+    //     tools.AssertUSDT(usdt.address, addrType.electrStakeAddr, feeType.electrStakeFee.add(orgBalance))
+    // }
+    // //electrStake()
+    // it("testing electrStake() should assert true", electrStake)
+
+    // const energyReceive = async function () {
+
+
+    //     await tools.timeout(7000)
+
+    //     const electrAddr = accounts[2];
+
+    //     const financing = await Financing.deployed()
+    //     const usdt = await USDTTest.deployed()
+
+    //     const wei = await tools.USDTFromWei(usdt, await tools.balanceOF(usdt.address, financing.address))
+    //     console.log(`contract balance of ${wei}`)
+
+    //     const addrType = await financing.addrType()
+    //     const feeType = await financing.feeType()
+    //     const limitTimeType = await financing.limitTimeType()
+
+    //     const electrStartTime = await financing.electrStartTime()
+    //     console.log(`electrStartTime ${electrStartTime}`)
+    //     // const origPlatformFeeAddrBalance = await tools.balanceOF(usdt.address, platformFeeAddr)
+    //     //addrType.builderAddr
+    //     // 判断第一次领取 需要质押电力
+    //     // uint256 months = (block.timestamp - electrStartTime) /
+    //     //     limitTimeType.electrIntervalTime;
+    //     // uint256 amount = months * feeType.electrFee;
+    //     // electrStartTime += months * limitTimeType.electrIntervalTime;
+    //     // // 判断第一次押金
+    //     // usdt.safeTransfer(addrType.electrAddr, amount);
+
+
+    //     const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+
+    //     console.log(`feeType.electrFee ${feeType.electrFee}`)
+    //     console.log(`limitTimeType.electrIntervalTime ${limitTimeType.electrIntervalTime}`)
+
+    //     const electrStake = await financing.energyReceive({ from: electrAddr })
+    //     assert.equal(electrStake.receipt.status, true, "electrStake failed !")
+
+    //     await tools.printfLogs(electrStake)
+
+    //     // const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+    //     // await tools.AssertUSDT(usdt.address, addrType.electrAddr, feeType.electrFee.add(origbuilderAddrBalance))
+    //     // await tools.AssertUSDT(usdt.address, platformFeeAddr, feeType.feeType.publicSalePlatformFee.add(origPlatformFeeAddrBalance))
+    // }
+    // //energyReceive
+    // it("testing energyReceive() should assert true", energyReceive)
+
+    // const insuranceReceive = async function () {
+
+    //     const insuranceAddr = accounts[4];
+    //     // usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
+    //     // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
+    //     const financing = await Financing.deployed()
+    //     const usdt = await USDTTest.deployed()
+
+    //     const addrType = await financing.addrType()
+    //     const feeType = await financing.feeType()
+
+    //     //addrType.insuranceAddr
+    //     const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.insuranceAddr)
+    //     const electrStake = await financing.insuranceReceive({ from: insuranceAddr })
+    //     assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+    //     await tools.AssertUSDT(usdt.address, addrType.insuranceAddr, feeType.insuranceFee.add(origbuilderAddrBalance))
+    // }
+
+    // //insuranceReceive
+    // it("testing insuranceReceive() should assert true", insuranceReceive)
 })

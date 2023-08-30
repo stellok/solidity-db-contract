@@ -115,6 +115,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
 
     ShareType public shareType;
 
+    uint256 public dividendsExpire;
+
     event claimFirstBuildFeeLog(
         address energyAddr_,
         uint256 firstFee_,
@@ -189,8 +191,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         LimitTimeType memory limitTimeList_, // times  集合
         ShareType memory shareList_, // Share  集合
         string memory uri_1,
-        string memory uri_2
+        string memory uri_2,
+        uint256 expire
     ) {
+        dividendsExpire = expire;
+
         whitelistPaymentTime = block.timestamp;
         saleIsActive = false;
         shareType = shareList_;
@@ -241,22 +246,15 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         schedule = ActionChoices.whitelistPayment;
     }
 
-    function deployDividends(
-        uint256 financingFee,
-        address financingAddr,
-        uint256 totalShares,
-        uint256 expire
-    ) internal returns (address) {
+    function deployDividends() internal returns (address) {
         bytes memory bytecode = type(Dividends).creationCode;
         bytes memory initCode = abi.encodePacked(
             bytecode,
             abi.encode(
                 usdt,
                 shareNFT,
-                financingFee,
-                financingAddr,
-                totalShares,
-                expire,
+                shareType.totalShare,
+                dividendsExpire,
                 operationStartTime,
                 spvStartTime,
                 electrStartTime,
@@ -669,22 +667,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    function checkDone(
-        uint256 financingFee,
-        address financingAddr,
-        uint256 totalShares,
-        uint256 expire
-    ) public nonReentrant {
-        require(_msgSender() == platformAddr, "only allow platformAddr call");
+    function checkDone() public nonReentrant {
         require(schedule == ActionChoices.FINISH, "not FINISH status");
         require(dividends == address(0), "contract had deployed!");
-        // require(isClaimRemainBuild == true, "no ClaimRemainBuild");
-        dividends = deployDividends(
-            financingFee,
-            financingAddr,
-            totalShares,
-            expire
-        );
+        dividends = deployDividends();
         usdt.safeTransfer(dividends, usdt.balanceOf(address(this)));
     }
 

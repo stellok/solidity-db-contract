@@ -171,6 +171,7 @@ module.exports = async function (deployer, network, accounts) {
         [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                                                              // []shareList_8
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
+        30,
         { from: deplorerUser }
     )
 
