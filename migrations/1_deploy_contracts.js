@@ -172,6 +172,7 @@ module.exports = async function (deployer, network, accounts) {
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         30,
+        100,
         { from: deplorerUser }
     )
 

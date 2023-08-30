@@ -116,6 +116,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     ShareType public shareType;
 
     uint256 public dividendsExpire;
+    uint256 public reserveFund;
 
     event claimFirstBuildFeeLog(
         address energyAddr_,
@@ -192,9 +193,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         ShareType memory shareList_, // Share  集合
         string memory uri_1,
         string memory uri_2,
-        uint256 expire
+        uint256 expire,
+        uint256 reserveFund_
     ) {
         dividendsExpire = expire;
+        reserveFund = reserveFund_;
 
         whitelistPaymentTime = block.timestamp;
         saleIsActive = false;
@@ -251,6 +254,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         bytes memory initCode = abi.encodePacked(
             bytecode,
             abi.encode(
+                reserveFund,
                 usdt,
                 shareNFT,
                 shareType.totalShare,

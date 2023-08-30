@@ -86,8 +86,10 @@ contract Dividends is AccessControl, ReentrancyGuard {
         uint256 spvIntervalTime; // 信托间隔时间
     }
     LimitTimeType public limitTimeType;
+    uint256 public reserveFund;
 
     constructor(
+        uint256 reserveFund_,
         IERC20 usdt,
         IERC721 nft,
         uint256 totalShares_,
@@ -100,6 +102,8 @@ contract Dividends is AccessControl, ReentrancyGuard {
         AddrType memory addrList_, // address  集合
         LimitTimeType memory limitTimeList_ // times 集合
     ) {
+        reserveFund = reserveFund_;
+
         USDT = usdt;
         NFT = nft;
         totalShares = totalShares_;
@@ -146,9 +150,8 @@ contract Dividends is AccessControl, ReentrancyGuard {
         require(index < phaseIndex(), "index must < current phase");
         require(monthlyInfo[index] > 0, "this Phase total amount is 0");
         require(receiveRecord[index].exist == false, "has been comforted");
-        uint256 total = monthlyInfo[index];
+        uint256 total = monthlyInfo[index] - reserveFund;
         receiveRecord[index].exist = true;
-        // USDT.safeTransfer(FinancingAddr, FinancingFee);
         receiveRecord[index].totalMonthlyBalance = total;
         receiveRecord[index].dividend = total / totalShares;
         emit doMonthlyTaskLog(
@@ -327,6 +330,8 @@ contract Dividends is AccessControl, ReentrancyGuard {
         );
     }
 
+    //TODO withdraw 多余领完
+
     function monthDividend(uint256 index) public view returns (uint256) {
         return receiveRecord[index].dividend;
     }
@@ -335,7 +340,10 @@ contract Dividends is AccessControl, ReentrancyGuard {
         return (block.timestamp - lastExecuted) / expire;
     }
 
-    function isReceive(uint256 index,uint256 tokenId) public view returns (bool) {
+    function isReceive(
+        uint256 index,
+        uint256 tokenId
+    ) public view returns (bool) {
         return receiveRecord[index].isReceive[tokenId];
     }
 }
