@@ -8,109 +8,106 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./NFT721Impl.sol";
-import "./Dividends.sol";
+import "./Operation.sol";
 
-//interface IBidding { tender.sol
 interface IBidding {
-    //  查看用户状态            // 返回 数量, 状态,
+    //return the subscription quantity,
     function viewSubscribe(address) external view returns (uint256);
 
     function transferAmount(uint256 amount) external;
 }
 
-// 股权融资
+//Equity financing
 contract Financing is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     bool public saleIsActive;
     IERC20 public usdt;
-    NFT721Impl public receiptNFT; // 股权  equityNFT
-    NFT721Impl public shareNFT; // 股权  equityNFT
-    IBidding public bidding; // 股权  equityNFT
+    NFT721Impl public receiptNFT; //Equity NFT
+    NFT721Impl public shareNFT; //equityNFT
+    IBidding public bidding; //equityNFT
 
     address public dividends;
 
     uint256 public constant maxNftAMOUNT = 10;
-    // 电力质押时间
+    //Power pledge time
     bool public electrStakeLock;
-    bool public isClaimRemainBuild; // 是否
+    bool public isClaimRemainBuild;
     enum ActionChoices {
         INIT,
-        whitelistPayment, // 白名单
-        publicSale, // 公售
-        publicSaleFailed, // 公售失败
-        startBuild, // 开始建造
-        remainPayment, // 尾款
-        Bargain, // 捡漏
-        FINISH, // 完成
-        FAILED // 失败
+        whitelistPayment, //Whitelist
+        publicSale, //Public sale
+        publicSaleFailed, //The public sale failed
+        startBuild, //Start building
+        remainPayment, //Tail payment
+        Bargain, //Pick up leaks
+        FINISH, //finish
+        FAILED //fail
     }
 
     ActionChoices public schedule;
     struct AddrType {
-        address builderAddr; // 建造人
-        address buildInsuranceAddr; // 建造保险地址
-        address insuranceAddr; // 保险提供方
-        address operationsAddr; // 运维提供方
-        address spvAddr; // SPV地址
-        address electrStakeAddr; // 电力质押地址
-        address electrAddr; // 电力人
+        address builderAddr; //Build people
+        address buildInsuranceAddr; //Build an insurance address
+        address insuranceAddr; //Insurance providers
+        address operationsAddr; //Operations provider
+        address spvAddr; //SPV address
+        address electrStakeAddr; //Electricity pledge address
+        address electrAddr; //Power Man
     }
 
     AddrType public addrType;
-    mapping(address => bool) public paidUser; // 实缴用户
+    mapping(address => bool) public paidUser; //Paid-up users
     LimitTimeType public limitTimeType;
-    address public platformAddr; //平台管理地址
-    address public platformFeeAddr; //平台收款地址
-    address public founderAddr; // 创始人
-    uint256 public issuedTotalShare; //  发行总股数
-    uint256 public publicSaleTotalSold; //  第一阶段总数量
-    uint256 public whitelistPaymentTime; // 白名单开始时间
-    uint256 publicSaleTime; // 公售开始时间
-    uint256 startBuildTime; //  开始建造时间
-    uint256 bargainTime; // 捡漏开始时间
-    uint256 public remainPaymentTime; // 白名单开始时间
-    uint256 public electrStartTime; // 上次电力结算时间
-    uint256 operationStartTime; // 上次运维结算时间
-    uint256 insuranceStartTime; // 上保险次结算时间
-    uint256 spvStartTime; // 上保险次结算时间
+    address public platformAddr; //Platform management address
+    address public platformFeeAddr; //Platform payment address
+    address public founderAddr; //founder
+    uint256 public issuedTotalShare; //Total number of shares issued
+    uint256 public publicSaleTotalSold; //Total number of the first stage
+    uint256 public whitelistPaymentTime; //Whitelist start time
+    uint256 publicSaleTime; //Public sale start time
+    uint256 startBuildTime; //Start of construction time
+    uint256 bargainTime; //Pick up the start time
+    uint256 public remainPaymentTime; //Whitelist start time
+    uint256 public electrStartTime;// The last power settlement time
+    uint256 operationStartTime; //The last O&M settlement time
+    uint256 insuranceStartTime; //Time of settlement of the insurance sub-insurance
+    uint256 spvStartTime; // Time of settlement of the insurance sub-insurance
 
-    //    feeInfo[]   public  feeList; 无效
     struct FeeType {
-        uint256 firstBuildFee; //首次建造款
-        uint256 remainBuildFee; //剩余建造款
-        uint256 operationsFee; //运费费
-        uint256 electrFee; // 电费
-        uint256 electrStakeFee; // 质押电费
-        uint256 buildInsuranceFee; // 建造保险费
-        uint256 insuranceFee; // 保修费
-        uint256 spvFee; // 信托管理费
-        uint256 publicSalePlatformFee; // 公售平台费
-        uint256 remainPlatformFee; // 公售平台费
+        uint256 firstBuildFee; //First build model
+        uint256 remainBuildFee; //Remaining construction money
+        uint256 operationsFee; //Shipping costs
+        uint256 electrFee; //Electricity
+        uint256 electrStakeFee; //Stake electricity charges
+        uint256 buildInsuranceFee; //Construction insurance premium
+        uint256 insuranceFee; //Warranty fee
+        uint256 spvFee; //Trust management fees
+        uint256 publicSalePlatformFee; //Public sale platform fee
+        uint256 remainPlatformFee;// Public sale platform fee
     }
     FeeType public feeType;
 
-    //  限时 limit  间隔 Interval
     struct LimitTimeType {
-        uint256 whitelistPaymentLimitTime; // 白名单限时
-        uint256 publicSaleLimitTime; // 公售限时
-        uint256 startBuildLimitTime; // 开始建造时间
-        uint256 bargainLimitTime; // 捡漏开始时间
-        uint256 remainPaymentLimitTime; // 白名单开始时间
-        uint256 electrIntervalTime; // 电力间隔时间
-        uint256 operationIntervalTime; // 运维间隔时间
-        uint256 insuranceIntervalTime; // 保险次结算时间
-        uint256 spvIntervalTime; // 信托间隔时间
+        uint256 whitelistPaymentLimitTime; //The whitelist is time-limited
+        uint256 publicSaleLimitTime; //Limited time for public sale
+        uint256 startBuildLimitTime;// Start of construction time
+        uint256 bargainLimitTime; //Pick up the start time
+        uint256 remainPaymentLimitTime; //Whitelist start time
+        uint256 electrIntervalTime; //Power interval
+        uint256 operationIntervalTime; //Time between operations
+        uint256 insuranceIntervalTime; //Insurance sub-settlement time
+        uint256 spvIntervalTime; //Trust interval
     }
 
     struct ShareType {
-        uint256 totalShare; // 总股数
-        uint256 financingShare; // 融资融资股
-        uint256 founderShare; // 创始人股数
-        uint256 platformShare; // 平台股数
-        uint256 sharePrice; // 股价
-        uint256 stakeSharePrice; // 质押股价
-        uint256 firstSharePrice; // 首次股价
-        uint256 remainSharePrice; // 补缴股价
+        uint256 totalShare; //Total number of shares
+        uint256 financingShare; //Financing Unit
+        uint256 founderShare; //Number of founder's shares
+        uint256 platformShare; //Number of shares of the platform
+        uint256 sharePrice; //Shares
+        uint256 stakeSharePrice; //Stake share price
+        uint256 firstSharePrice; //First share price
+        uint256 remainSharePrice; //Backpayment of share price
     }
 
     ShareType public shareType;
@@ -179,18 +176,18 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount_,
         uint256 time_
     );
-    event whetherFirstPaymentFinishLog(bool, uint256 time_); // 是否     完成
-    event whetherFinishLog(bool, uint256 time_); // 是否 完成
+    event whetherFirstPaymentFinishLog(bool, uint256 time_);
+    event whetherFinishLog(bool, uint256 time_);
 
     constructor(
         IERC20 usdtAddr_,
-        IBidding bidding_, //  招投标合约
+        IBidding bidding_, //Tender contracts
         address platformFeeAddr_,
         address founderAddr_,
         FeeType memory feeList_, // fees
-        AddrType memory addrList_, // address  集合
-        LimitTimeType memory limitTimeList_, // times  集合
-        ShareType memory shareList_, // Share  集合
+        AddrType memory addrList_, // address  
+        LimitTimeType memory limitTimeList_, // times 
+        ShareType memory shareList_, // Share
         string memory uri_1,
         string memory uri_2,
         uint256 expire,
@@ -206,22 +203,22 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         limitTimeType = limitTimeList_;
         feeType = feeList_;
         // feeList_ field check
-        require(feeList_.firstBuildFee != 0, "firstBuildFee == 0"); //首次建造款
-        require(feeList_.remainBuildFee != 0, "remainBuildFee == 0"); //剩余建造款
-        require(feeList_.operationsFee != 0, "operationsFee == 0"); //运费费
-        require(feeList_.electrFee != 0, "electrFee== 0"); // 电费
-        require(feeList_.electrStakeFee != 0, "electrStakeFee == 0"); // 质押电费
-        require(feeList_.buildInsuranceFee != 0, "buildInsuranceFee == 0"); // 建造保险费
-        require(feeList_.insuranceFee != 0, "insuranceFee == 0"); // 保修费
-        require(feeList_.spvFee != 0, "spvFee== 0"); // 信托管理费
+        require(feeList_.firstBuildFee != 0, "firstBuildFee == 0"); //First build model
+        require(feeList_.remainBuildFee != 0, "remainBuildFee == 0"); //Remaining construction money
+        require(feeList_.operationsFee != 0, "operationsFee == 0"); //Shipping costs
+        require(feeList_.electrFee != 0, "electrFee== 0"); //Electricity
+        require(feeList_.electrStakeFee != 0, "electrStakeFee == 0");// Stake electricity charges
+        require(feeList_.buildInsuranceFee != 0, "buildInsuranceFee == 0"); //Construction insurance premium
+        require(feeList_.insuranceFee != 0, "insuranceFee == 0"); //Warranty fee
+        require(feeList_.spvFee != 0, "spvFee== 0"); //Trust management fees
         require(address(usdtAddr_) != address(0), "usdt Can not be empty");
         require(
             platformFeeAddr_ != address(0),
             "platformFeeAddr_ Can not be empty"
         );
 
-        platformAddr = _msgSender(); //平台管理地址
-        platformFeeAddr = platformFeeAddr_; //平台收款地址
+        platformAddr = _msgSender(); //Platform management address
+        platformFeeAddr = platformFeeAddr_; //Platform payment address
 
         founderAddr = founderAddr_;
         require(
@@ -229,7 +226,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 shareType.firstSharePrice + //30
                     shareType.remainSharePrice, //70
             "sharePrice verification failed"
-        ); // 价格校验失败
+        ); //Price verification failed
         require(
             shareType.totalShare ==
                 shareType.financingShare +
@@ -250,7 +247,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     function deployDividends() internal returns (address) {
-        bytes memory bytecode = type(Dividends).creationCode;
+        bytes memory bytecode = type(Operation).creationCode;
         bytes memory initCode = abi.encodePacked(
             bytecode,
             abi.encode(
@@ -303,31 +300,31 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         return deployedContract;
     }
 
-    //  白名单支付
+    //Whitelist payments
     function whiteListPayment() public nonReentrant {
         require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
         require(shareType.financingShare > publicSaleTotalSold, "sold out");
-        require(!paidUser[_msgSender()], " Cannot participate repeatedly"); //  不能重复参与
+        require(!paidUser[_msgSender()], " Cannot participate repeatedly"); //Participation cannot be repeated
         paidUser[_msgSender()] = true;
-        //  不能小于零
+        //Cannot be less than zero
         require(
             whitelistPaymentTime + limitTimeType.publicSaleLimitTime >
                 block.timestamp,
             "time expired"
         );
-        //  查看招投标合约用户质押状态 数量, 状态,
+        //View the staking status of the bidding contract user quantity, status,
         uint256 amount = bidding.viewSubscribe(_msgSender());
-        // 必须为锁定状态
+        //Must be locked
         require(amount > 0, "Not yet subscribed");
-        // 数量 大于0
+        //Quantity greater than 0
         if (shareType.financingShare - publicSaleTotalSold < amount) {
             amount = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount;
         uint256 gAmout = amount * shareType.stakeSharePrice;
         bidding.transferAmount(gAmout);
-        // 同时通知招投标合约释放押金
+        //At the same time, the tender contract is notified to release the deposit
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
@@ -339,12 +336,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             (shareType.firstSharePrice - shareType.stakeSharePrice),
             block.timestamp
         );
-        // 铸造凭证 nft
+       // Minting voucher NFTs
         receiptNFT.mint(_msgSender(), amount);
         _whetherFirstPaymentFinish();
     }
 
-    //  检查首付是否完成
+    //Check if the down payment is complete
     function _whetherFirstPaymentFinish() private {
         if (publicSaleTotalSold >= shareType.financingShare) {
             startBuildTime = block.timestamp;
@@ -353,7 +350,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
     }
 
-    // 检查第一次实缴是否成功
+    //Check whether the first payment was successful
     function checkWhiteList() public nonReentrant {
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
         require(
@@ -381,15 +378,13 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         return mAmount;
     }
 
-    // 公售
-    // @param amount_股数
     function publicSale(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not PAID status");
         require(
             amount_ <= maxNftAMOUNT && amount_ > 0,
             "amount Limit Exceeded"
-        ); // 超出限制
-        // 判断状态
+        ); //Limit exceeded
+        //Determine the status
         require(
             shareType.financingShare > publicSaleTotalSold,
             "cannot be less than zero"
@@ -423,7 +418,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         _whetherFirstPaymentFinish();
     }
 
-    // 检查公售
+    //Check the public sale
     function checkPublicSale() public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not PAID status");
         require(
@@ -439,7 +434,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
     }
 
-    // 退回公售
+    //Return to the public sale
     function redeemPublicSale(
         uint256[] memory tokenIdList
     ) public nonReentrant {
@@ -452,7 +447,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
                 "Insufficient balance"
-            ); // 不是nft  所有者
+            );
 
             issuedTotalShare -= 1;
             receiptNFT.burn(tokenIdList[i]);
@@ -470,20 +465,20 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    // 领取首次建造费
+    //Receive the first construction fee
     function claimFirstBuildFee() public nonReentrant {
         require(platformAddr == _msgSender(), "permission denied");
         require(schedule == ActionChoices.startBuild, "not startBuild status");
-        // 首次费用
+        //First Fee
         usdt.safeTransfer(addrType.builderAddr, feeType.firstBuildFee);
-        // 给平台打钱
+        //Send money to the platform
         usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
-        // 打保险费
+        //Hit the insurance premium
         usdt.safeTransfer(
             addrType.buildInsuranceAddr,
             feeType.buildInsuranceFee
         );
-        // 打钱
+        //Hit the money
         emit buildInsuranceReceiveLog(
             addrType.buildInsuranceAddr,
             feeType.buildInsuranceFee,
@@ -499,14 +494,14 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    // 用户付尾款
+    //The user pays the final payment
     function remainPayment(uint256[] memory tokenIdList) public nonReentrant {
         require(
             schedule == ActionChoices.remainPayment,
             "not remainPayment status"
         );
         require(issuedTotalShare < shareType.financingShare, "Sold out");
-        //  不能小于零
+        //Cannot be less than zero
         require(
             (remainPaymentTime + limitTimeType.remainPaymentLimitTime) >
                 block.timestamp &&
@@ -518,7 +513,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
                 "Insufficient balance"
-            ); // 不是nft  所有者
+            ); //Not an NFT owner
             issuedTotalShare += 1;
             receiptNFT.burn(tokenIdList[i]);
         }
@@ -538,7 +533,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         _whetherFinish();
     }
 
-    //  检查是否完成
+    //Check if it's done
     function _whetherFinish() private {
         if (issuedTotalShare >= shareType.financingShare) {
             shareNFT.mint(platformFeeAddr, shareType.platformShare);
@@ -548,7 +543,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
     }
 
-    // 检查尾款是否成功
+    //Check whether the final payment is successful
     function checkRemainPayment() public nonReentrant {
         require(
             schedule == ActionChoices.remainPayment,
@@ -559,14 +554,14 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             remainPaymentTime + limitTimeType.remainPaymentLimitTime >
                 block.timestamp,
             "RemainPayment time is not up"
-        ); // 时间未到
-        // 时间到期
+        );
+        //Time expires
         if (issuedTotalShare < shareType.financingShare) {
             bargainTime = block.timestamp;
             schedule = ActionChoices.Bargain;
             //TODO
             //NFT.tokenIdBurn(receiptToken);
-            receiptNFT.pause(); // 将他暂停
+            receiptNFT.pause();
             emit startBargainLog(
                 issuedTotalShare - shareType.financingShare,
                 block.timestamp
@@ -576,7 +571,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
     }
 
-    // 捡漏
+    //Pick up leaks
     function remainBargain(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.Bargain, "not PAID status");
         require(issuedTotalShare < shareType.financingShare, "Sold out");
@@ -584,12 +579,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             amount_ <= maxNftAMOUNT && amount_ > 0,
             "amount Limit Exceeded"
         );
-        //  不能小于零
+        //Cannot be less than zero
         require(
             bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
             "time expired"
         );
-        // 余额不足
+        //Insufficient balance
         uint256 balance = shareType.financingShare - issuedTotalShare;
         require(balance > 0, "Sold out");
         if (amount_ > balance) {
@@ -611,15 +606,15 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    // 检查捡漏
+    //Check for leaks
     function checkBargain() public nonReentrant {
         require(schedule == ActionChoices.Bargain, "not PAID status");
-        //  不能小于零
+        //Cannot be less than zero
         require(
             bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
             "RemainPayment time is not up"
-        ); // 时间未到
-        // 时间到期
+        );
+    
         if (issuedTotalShare < shareType.financingShare) {
             schedule = ActionChoices.FAILED;
             emit whetherFinishLog(false, block.timestamp);
@@ -628,7 +623,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         }
     }
 
-    // 赎回股权付款
+    //Redemption of equity payments
     function redeemRemainPayment(
         uint256[] memory tokenIdList
     ) public nonReentrant {
@@ -641,11 +636,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
                 "Insufficient balance"
-            ); // 不是nft  所有者
-            // 查看余额
+            );
+            //Check your balance
             receiptNFT.burn(tokenIdList[i]);
 
-            // 打钱
+            //Hit the money
             emit redeemRemainPaymentLog(
                 tokenIdList[i],
                 shareType.remainSharePrice
@@ -654,11 +649,11 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         usdt.safeTransfer(_msgSender(), shareType.remainSharePrice);
     }
 
-    // 领取剩余的货款
+    //Receive the remaining payment
     function claimRemainBuildFee() public nonReentrant {
         require(_msgSender() == addrType.builderAddr, "permission denied");
         require(schedule == ActionChoices.FINISH, "not FINISH status");
-        require(isClaimRemainBuild == false, "Can not receive repeatedly"); //  不能能重复领取
+        require(isClaimRemainBuild == false, "Can not receive repeatedly"); //It cannot be claimed repeatedly
         usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
         usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
         isClaimRemainBuild = true;

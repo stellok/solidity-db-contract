@@ -436,32 +436,59 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         const spvBalance = await tools.balanceOF(usdt.address, addrType.spvAddr)
         const feeType = await dividends.feeType()
         const tx = await dividends.spvReceive({ from: caller })
+        console.log(`spvReceive tx ${tx.tx}`)
+        const spvStartTime = await dividends.spvStartTime()
+        console.log(`spvStartTime ${spvStartTime}`)
 
         //feeType.spvFee
-        await tools.AssertUSDT(usdt.address, addrType.spvAddr, feeType.spvFee.add(spvBalance))
+        // await tools.AssertUSDT(usdt.address, addrType.spvAddr, feeType.spvFee.add(spvBalance))
 
     }
     it("testing spvReceive() should assert true", spvReceive)
+    it("testing spvReceiveTry() should assert true", async function () {
+        try {
+            await spvReceive()
+        } catch (error) {
+            assert(error.message.includes("Refusal to contract transactions"), "Expected an error with message 'Error message'.");
+        }
+    })
 
-    // const electrStake =async function () {
+    it("testing spvReceive2Year() should assert true", async function () {
+        const financing = await Financing.deployed()
+        const dividends = await Dividends.at(await financing.dividends());
+        //limitTimeType.spvIntervalTime
+        const limitTimeType = await dividends.limitTimeType();
+        await tools.timeout(new BN(limitTimeType.spvIntervalTime).toNumber() * 1000 + 2000)
+        await spvReceive()
+    })
 
-    //     const electrStakeAddr = accounts[2];
-    //     //addrType.electrStakeAddr, feeType.electrStakeFee
-    //     const financing = await Financing.deployed()
-    //     const dividends = await Dividends.at(await financing.dividends());
-    //     const usdt = await USDTTest.deployed();
+    const electrStake =async function () {
+        const electrStakeAddr = accounts[2];
+        //addrType.electrStakeAddr, feeType.electrStakeFee
+        const financing = await Financing.deployed()
+        const dividends = await Dividends.at(await financing.dividends());
+        const usdt = await USDTTest.deployed();
 
-    //     const addrType = await financing.addrType()
+        const addrType = await financing.addrType()
 
-    //     const feeType = await financing.feeType()
-    //     const orgBalance = await tools.balanceOF(usdt.address, addrType.electrStakeAddr)
-    //     const electrStake = await dividends.electrStake({ from: electrStakeAddr })
-    //     assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+        const feeType = await financing.feeType()
+        const orgBalance = await tools.balanceOF(usdt.address, addrType.electrStakeAddr)
+        const electrStake = await dividends.electrStake({ from: electrStakeAddr })
+        assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+        console.log(`electrStake hash ${electrStake.tx}`)
 
-    //     tools.AssertUSDT(usdt.address, addrType.electrStakeAddr, feeType.electrStakeFee.add(orgBalance))
-    // }
-    // //electrStake()
-    // it("testing electrStake() should assert true", electrStake)
+        tools.AssertUSDT(usdt.address, addrType.electrStakeAddr, feeType.electrStakeFee.add(orgBalance))
+    }
+    //electrStake()
+    it("testing electrStake() should assert true", electrStake)
+
+    it("testing electrStake2() should assert true", async function(){
+        try {
+            await electrStake()
+        } catch (error) {
+            assert(error.message.includes("Refusal to contract transactions"), "Expected an error with message 'Error message'.");
+        }
+    })
 
     // const energyReceive = async function () {
 

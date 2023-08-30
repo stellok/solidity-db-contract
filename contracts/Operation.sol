@@ -6,23 +6,23 @@ import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract Dividends is AccessControl, ReentrancyGuard {
+contract Operation is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
     IERC20 public USDT;
     IERC721 public NFT;
     uint256 public expire;
     uint256 public totalShares;
     uint256 public lastExecuted;
-    mapping(uint256 => uint256) monthlyInfo; // 每月支付总金额
+    mapping(uint256 => uint256) monthlyInfo; //The total amount paid each month
     struct dividendsInfo {
-        bool exist; // 存在
-        uint256 totalMonthlyBalance; // 月总余额
-        uint256 dividend; // 股息
-        mapping(uint256 => bool) isReceive; // 领取
+        bool exist; // 
+        uint256 totalMonthlyBalance; //Total monthly balance
+        uint256 dividend; //dividend
+        mapping(uint256 => bool) isReceive; //Receive
     }
 
     //<index,dividendsInfo>
-    mapping(uint256 => dividendsInfo) receiveRecord; // 领取记录
+    mapping(uint256 => dividendsInfo) receiveRecord; //Claim records
 
     event paymentLog(uint256 index, uint256 amount, uint256 time);
     event doMonthlyTaskLog(
@@ -41,49 +41,50 @@ contract Dividends is AccessControl, ReentrancyGuard {
 
     //start time
     uint256 operationStartTime;
-    uint256 spvStartTime;
+    uint256 public spvStartTime;
     uint256 electrStartTime;
     uint256 insuranceStartTime;
+    uint256 buildInsuranceStartTime;
 
     // AddrType
     struct AddrType {
-        address builderAddr; // 建造人
-        address buildInsuranceAddr; // 建造保险地址
-        address insuranceAddr; // 保险提供方
-        address operationsAddr; // 运维提供方
-        address spvAddr; // SPV地址
-        address electrStakeAddr; // 电力质押地址
-        address electrAddr; // 电力人
+        address builderAddr; //builder
+        address buildInsuranceAddr; //build insurance address
+        address insuranceAddr; //insurance provider
+        address operationsAddr; //operation and maintenance provider
+        address spvAddr; //SPV address
+        address electrStakeAddr; //Electricity pledge address
+        address electrAddr; //electric man
     }
 
     AddrType public addrType;
 
     // FeeType
     struct FeeType {
-        uint256 firstBuildFee; //首次建造款
-        uint256 remainBuildFee; //剩余建造款
-        uint256 operationsFee; //运费费
-        uint256 electrFee; // 电费
-        uint256 electrStakeFee; // 质押电费
-        uint256 buildInsuranceFee; // 建造保险费
-        uint256 insuranceFee; // 保修费
-        uint256 spvFee; // 信托管理费
-        uint256 publicSalePlatformFee; // 公售平台费
-        uint256 remainPlatformFee; // 公售平台费
+        uint256 firstBuildFee; //first build
+        uint256 remainBuildFee; //Remaining construction funds
+        uint256 operationsFee; //shipping fee
+        uint256 electrFee; //electricity bill
+        uint256 electrStakeFee; //Pledge electricity fee
+        uint256 buildInsuranceFee; //build premium
+        uint256 insuranceFee; //warranty fee
+        uint256 spvFee; //trust management fee
+        uint256 publicSalePlatformFee; //public sale platform fee
+        uint256 remainPlatformFee; //public sale platform fee
     }
     FeeType public feeType;
 
-    //  限时 limit  间隔 Interval
+    //time limit interval Interval
     struct LimitTimeType {
-        uint256 whitelistPaymentLimitTime; // 白名单限时
-        uint256 publicSaleLimitTime; // 公售限时
-        uint256 startBuildLimitTime; // 开始建造时间
-        uint256 bargainLimitTime; // 捡漏开始时间
-        uint256 remainPaymentLimitTime; // 白名单开始时间
-        uint256 electrIntervalTime; // 电力间隔时间
-        uint256 operationIntervalTime; // 运维间隔时间
-        uint256 insuranceIntervalTime; // 保险次结算时间
-        uint256 spvIntervalTime; // 信托间隔时间
+        uint256 whitelistPaymentLimitTime; //Whitelist time limit
+        uint256 publicSaleLimitTime; //public sale for a limited time
+        uint256 startBuildLimitTime;// Start of construction time
+        uint256 bargainLimitTime; //Pick up the start time
+        uint256 remainPaymentLimitTime; //Whitelist start time
+        uint256 electrIntervalTime; //Power interval
+        uint256 operationIntervalTime; //Time between operations
+        uint256 insuranceIntervalTime; //Insurance sub-settlement time
+        uint256 spvIntervalTime; //Trust interval
     }
     LimitTimeType public limitTimeType;
     uint256 public reserveFund;
@@ -99,8 +100,8 @@ contract Dividends is AccessControl, ReentrancyGuard {
         uint256 electrStartTime_,
         uint256 insuranceStartTime_,
         FeeType memory feeList_, // fees
-        AddrType memory addrList_, // address  集合
-        LimitTimeType memory limitTimeList_ // times 集合
+        AddrType memory addrList_, // address
+        LimitTimeType memory limitTimeList_ // times
     ) {
         reserveFund = reserveFund_;
 
@@ -121,7 +122,12 @@ contract Dividends is AccessControl, ReentrancyGuard {
     }
 
     event operationsReceiveLog(address addr_, uint256 amount_, uint256 time_);
-    event spvReceiveLog(address addr_, uint256 amount_, uint256 time_);
+    event spvReceiveLog(
+        address addr_,
+        uint256 amount_,
+        uint256 year,
+        uint256 time_
+    );
     event electrStakeLog(address feeAddr, uint256 amount, uint256 time_);
 
     event energyReceiveLog(
@@ -136,8 +142,14 @@ contract Dividends is AccessControl, ReentrancyGuard {
         uint256 time_
     );
 
-    // 支付
-    function payment(uint256 amount) public nonReentrant {
+     event buildInsuranceReceiveLog(
+        address energyAddr_,
+        uint256 amount_,
+        uint256 time_
+    );
+
+    //pay
+    function income(uint256 amount) public nonReentrant {
         require(amount > 0, "amount cannot be zero"); // 不能为零
         USDT.safeTransferFrom(msg.sender, address(this), amount);
         uint256 index = phaseIndex();
@@ -145,7 +157,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
         emit paymentLog(index, amount, block.timestamp);
     }
 
-    // 检查阶段分红
+    //Check the dividends during the inspection phase
     function doMonthlyTask(uint256 index) public nonReentrant {
         require(index < phaseIndex(), "index must < current phase");
         require(monthlyInfo[index] > 0, "this Phase total amount is 0");
@@ -162,7 +174,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
         );
     }
 
-    // 领取分红
+    //Receive dividends
     function receiveDividends(
         uint256 index,
         uint256[] memory tokenList
@@ -172,21 +184,21 @@ contract Dividends is AccessControl, ReentrancyGuard {
         require(
             receiveRecord[index].exist == true,
             "This month's dividend has not been settled"
-        ); // 本月分红还没结算
+        ); //This month's dividend has not yet been settled
         require(
             receiveRecord[index].totalMonthlyBalance >=
                 tokenList.length * receiveRecord[index].dividend,
             "Insufficient dividend balance"
-        ); // 分红余额不足
+        ); //Insufficient dividend balance
         for (uint i = 0; i < tokenList.length; i++) {
             require(
                 NFT.ownerOf(tokenList[i]) == msg.sender,
                 "You do not have permission"
-            ); // 你没有权限
+            ); //You don't have permissions
             require(
                 receiveRecord[index].isReceive[tokenList[i]] == false,
                 "Cannot be claimed repeatedly"
-            ); // 无法重复领取
+            ); //Duplicate claims are not possible
 
             receiveRecord[index].isReceive[tokenList[i]] = true;
             receiveRecord[index].totalMonthlyBalance -= receiveRecord[index]
@@ -205,7 +217,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
         );
     }
 
-    // 运维 领取 30天一次
+    //O&M Collect once every 30 days
     function operationsReceive() public nonReentrant {
         require(
             _msgSender() == addrType.operationsAddr,
@@ -216,7 +228,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
                 block.timestamp,
             "Refusal to contract transactions"
         );
-        // 判断第一次领取 需要质押电力 // 3000
+        //Judging the first claim requires pledge electricity // 3000
         uint256 months = block.timestamp -
             (operationStartTime + limitTimeType.operationIntervalTime) /
             limitTimeType.operationIntervalTime;
@@ -227,7 +239,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
         emit operationsReceiveLog(_msgSender(), amount, block.timestamp);
     }
 
-    //  spv 领取
+    //SPV pickup
     function spvReceive() public nonReentrant {
         require(
             _msgSender() == addrType.spvAddr,
@@ -235,6 +247,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
         );
 
         uint256 amount;
+        uint256 year = 1;
         if (spvStartTime == 0) {
             amount = feeType.spvFee;
             USDT.safeTransfer(addrType.spvAddr, amount);
@@ -244,26 +257,27 @@ contract Dividends is AccessControl, ReentrancyGuard {
                 spvStartTime + limitTimeType.spvIntervalTime < block.timestamp,
                 "Refusal to contract transactions"
             );
-            uint256 year = (block.timestamp - spvStartTime) /
+            year =
+                (block.timestamp - spvStartTime) /
                 limitTimeType.spvIntervalTime;
 
             amount = year * feeType.spvFee;
             spvStartTime += year * limitTimeType.spvIntervalTime;
             USDT.safeTransfer(addrType.spvAddr, amount);
         }
-        emit spvReceiveLog(addrType.spvAddr, amount, block.timestamp);
+        emit spvReceiveLog(addrType.spvAddr, amount, year, block.timestamp);
     }
 
     bool electrStakeLock;
 
-    //  押金
+    //Electricity deposit collection
     function electrStake() public nonReentrant {
         require(
             _msgSender() == addrType.electrStakeAddr,
             "user does not have permission"
         );
         require(electrStakeLock == false, "not FINISH status");
-        // 判断第一次领取 需要质押电力  todo 时间计算公式
+        //To determine the first claim requires pledge electricity TODO time calculation formula
         electrStakeLock = true;
         USDT.safeTransfer(addrType.electrStakeAddr, feeType.electrStakeFee);
         emit electrStakeLog(
@@ -273,7 +287,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
         );
     }
 
-    // 电力领取  30天一次
+    //Electricity collection once every 30 days
     function energyReceive() public nonReentrant {
         require(
             _msgSender() == addrType.electrAddr,
@@ -284,12 +298,12 @@ contract Dividends is AccessControl, ReentrancyGuard {
                 block.timestamp,
             "Refusal to contract transactions"
         );
-        // 判断第一次领取 需要质押电力
+        //It is judged that the first claim requires pledge of electricity
         uint256 months = (block.timestamp - electrStartTime) /
             limitTimeType.electrIntervalTime;
         uint256 amount = months * feeType.electrFee;
         electrStartTime += months * limitTimeType.electrIntervalTime;
-        // 判断第一次押金
+        //Judge the first deposit
         USDT.safeTransfer(addrType.electrAddr, amount);
         emit energyReceiveLog(
             addrType.electrAddr,
@@ -299,13 +313,12 @@ contract Dividends is AccessControl, ReentrancyGuard {
         );
     }
 
-    // 保险领取  一年一次
+    //Claim insurance once a year
     function insuranceReceive() public nonReentrant {
         require(
             _msgSender() == addrType.insuranceAddr,
             "user does not have permission"
         );
-        // 不能
         uint256 amount;
         if (insuranceStartTime == 0) {
             amount = feeType.insuranceFee;
@@ -330,7 +343,7 @@ contract Dividends is AccessControl, ReentrancyGuard {
         );
     }
 
-    //TODO withdraw 多余领完
+    //TODO withdraw is overdue
 
     function monthDividend(uint256 index) public view returns (uint256) {
         return receiveRecord[index].dividend;

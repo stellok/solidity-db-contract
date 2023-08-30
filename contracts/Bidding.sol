@@ -9,44 +9,44 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-// 招标合约
+//Tender contracts
 contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    bytes32 public constant PLATFORM = keccak256("PLATFORM"); // 平台
-    bytes32 public constant ADMIN = keccak256("ADMIN"); // 平台
-    bytes32 public constant OWNER = keccak256("OWNER"); //
+    bytes32 public constant PLATFORM = keccak256("PLATFORM");
+    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 public constant OWNER = keccak256("OWNER");
 
-    uint256 startTime; //  开始时间  设置 minerStake
+    uint256 startTime; //Start time minerStake
     uint256 public totalSold;
 
-    uint256 public financingShare; // 融资融资股
-    uint256 public stakeSharePrice; // 质押股价
+    uint256 public financingShare; //Financing Unit
+    uint256 public stakeSharePrice; //Stake share price
     address private financAddr;
 
     struct userStakeInfo {
-        uint256 amount; // 股数
-        bool unStake; // 退回
-        bool exist; // 存在
+        uint256 amount; //Number of shares
+        bool unStake; //return
+        bool exist; //exist
     }
 
     struct minerStakeInfo {
-        uint256 amount; // 股数
-        uint256 stakeAmount; // 退回
-        uint256 nonce; // 退回 ++
-        bool unStake; // 退回
+        uint256 amount; //Number of shares
+        uint256 stakeAmount;
+        uint256 nonce;
+        bool unStake;
         bool hadStaked;
-        bool exist; // 存在
+        bool exist;
     }
 
-    // 公司 质押
+    //Company staking
     struct companyStakeInfo {
         address addr;
-        uint256 totalAmount; // 总数
-        uint256 stakeAmount; // 质押数量
-        bool unStake; // 退回
-        bool exist; // 存在
+        uint256 totalAmount; //total
+        uint256 stakeAmount; //Number of stakes
+        bool unStake;
+        bool exist;
     }
 
     enum companyType {
@@ -58,29 +58,29 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
     mapping(companyType => companyStakeInfo) companyList;
 
-    mapping(address => userStakeInfo) public user; // 用户
-    mapping(address => minerStakeInfo) public miner; // 矿工
+    mapping(address => userStakeInfo) public user; // user
+    mapping(address => minerStakeInfo) public miner; //miner
 
     IERC20 public usdt; // usdt
 
-    bool public isDdFee; //  是否缴纳尽调费
-    bool public isPayService; // 是否 缴纳
-    bool public isPayMinerToSpv; // 是否支付矿工费
+    bool public isDdFee; //Whether due diligence fees are paid
+    bool public isPayService; //Whether or not to pay
+    bool public isPayMinerToSpv; //Whether miner fees are paid
 
-    address public platformAddr; //平台管理
-    address public platformFeeAddr; //平台管理费地址
-    address public spvAddr; // spv地址
-    address public founderAddr; // 创始人
-    address public DDAddr; // 尽调地址
+    address public platformAddr; //Platform management
+    address public platformFeeAddr; //Platform management fee address
+    address public spvAddr; //SPV address
+    address public founderAddr; //founder
+    address public DDAddr; //Due diligence address
 
-    uint256 public serviceFee; //  服务费 10000
-    uint256 public ddFee; //    尽调费 90000  首次
+    uint256 public serviceFee; //Service fee 10000
+    uint256 public ddFee; //Due diligence fee of 90,000 for the first time
 
     bool public isInIt;
 
-    uint256 subscribeTime; // 认购时间
-    uint256 subscribeLimitTime; // 限时
-    uint256 minerStakeLimitTime; // 矿工质押限时
+    uint256 subscribeTime; //Subscription time
+    uint256 subscribeLimitTime; //Limited time
+    uint256 minerStakeLimitTime; //Miner staking time limit
     uint256 public constant maxNftAMOUNT = 10;
 
     event unSubscribeLog(address addr, uint256 id, uint256 time);
@@ -138,14 +138,14 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) {
         _setRoleAdmin(ADMIN, OWNER);
         _setRoleAdmin(PLATFORM, ADMIN);
-        _setupRole(PLATFORM, _msgSender());//TODO _msgSender
-        _setupRole(ADMIN, adminAddr_);
+        _setupRole(PLATFORM, _msgSender()); //TODO _msgSender
+        _setupRole(ADMIN, adminAddr_); //
         _setupRole(OWNER, owner_);
-        ddFee = ddFee_; //  尽调费
-        DDAddr = ddAddr_; //矿场提供方
-        platformAddr = _msgSender(); // 平台管理
-        founderAddr = founderAddr_; //创始人
-        serviceFee = service_; //  服务费
+        ddFee = ddFee_; //Due diligence fees
+        DDAddr = ddAddr_; //Mine provider
+        platformAddr = _msgSender(); //Platform management
+        founderAddr = founderAddr_; //founder
+        serviceFee = service_; //service charge
 
         spvAddr = spvAddr_;
         startTime = block.timestamp;
@@ -153,12 +153,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         platformFeeAddr = platformFeeAddr_;
     }
 
-    //  缴纳服务费
+    //Pay the service fee
     function payServiceFee() public nonReentrant {
-        require(_msgSender() == founderAddr, "user does not have permission"); // 创始人 PayServiceFee
-        require(isPayService == false, "user does not have permission"); // 创始人
+        require(_msgSender() == founderAddr, "user does not have permission"); //Founder PayServiceFee
+        require(isPayService == false, "user does not have permission"); //founder
         isPayService = true;
-        usdt.safeTransferFrom(_msgSender(), platformFeeAddr, serviceFee); // 缴给
+        usdt.safeTransferFrom(_msgSender(), platformFeeAddr, serviceFee); //Paid
         emit payServiceFeeLog(
             founderAddr,
             platformFeeAddr,
@@ -167,16 +167,16 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    //  缴纳尽调费
+    //Pay the due diligence fee
     function payDDFee() public nonReentrant {
-        require(_msgSender() == founderAddr, "user does not have permission"); // 创始人
-        require(isDdFee == false, "user does not have permission"); // 创始人
+        require(_msgSender() == founderAddr, "user does not have permission"); //founder
+        require(isDdFee == false, "user does not have permission"); //founder
         isDdFee = true;
-        usdt.safeTransferFrom(_msgSender(), address(this), ddFee); // 缴给
+        usdt.safeTransferFrom(_msgSender(), address(this), ddFee); //Paid
         emit payDDFeeLog(founderAddr, ddFee, block.timestamp);
     }
 
-    // 退回尽调费
+    //Refund of due diligence fees
     function refundDDFee() public nonReentrant onlyRole(ADMIN) {
         require(isDdFee == true, "user does not have permission");
         isDdFee = false;
@@ -185,14 +185,14 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit refundDDFeeLog(founderAddr, ddFee, block.timestamp);
     }
 
-    // 矿工质押
+    //Miner staking
     function minerIntentMoney(
         uint256 amount,
         uint256 expire,
         bytes memory signature
     ) public nonReentrant {
-        require(expire > block.timestamp, "not yet expired"); // 还没到期
-        require(miner[_msgSender()].exist == false, "participated"); // 参与过了
+        require(expire > block.timestamp, "not yet expired"); //It hasn't expired yet
+        require(miner[_msgSender()].exist == false, "participated"); // Participated
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
@@ -215,20 +215,20 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit minerIntentMoneyLog(_msgSender(), amount, block.timestamp);
     }
 
-    //    退款矿工质押
+    //Refund miner staking
     function unMinerIntentMoney(
         uint256 expire,
         uint256 amount,
         uint256 nonce,
         bytes memory signature
     ) public nonReentrant {
-        require(miner[_msgSender()].exist == true, "miner  does not exist"); //用户不存在
-        require(miner[_msgSender()].nonce == nonce, "nonce invalid"); //无效
+        require(miner[_msgSender()].exist == true, "miner  does not exist"); //The user does not exist
+        require(miner[_msgSender()].nonce == nonce, "nonce invalid");
         require(
             miner[_msgSender()].amount >= amount && amount > 0,
             "amount invalid"
-        ); //无效
-        require(expire > block.timestamp, "not yet expired"); // 还没到期
+        );
+        require(expire > block.timestamp, "not yet expired"); //It hasn't expired yet
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
@@ -251,19 +251,19 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit unMinerIntentMoneyLog(_msgSender(), amount, block.timestamp);
     }
 
-    // 开启认购
+    //Open subscription
     function startSubscribe(
         uint256 financingShare_,
         uint256 stakeSharePrice_,
         uint256 subscribeTime_,
         uint256 subscribeLimitTime_
     ) public nonReentrant onlyRole(PLATFORM) {
-        require(financingShare_ > 0, "financingShare cannot be zero"); //  不能为零
-        require(stakeSharePrice_ > 0, "subscribeLimitTime_ cannot be zero"); //  未开启
-        require(subscribeTime_ > 0, "subscribeTime_ cannot be zero"); //  不能为零
-        require(subscribeLimitTime_ > 0, "subscribeLimitTime_ cannot be zero"); //  未开启
+        require(financingShare_ > 0, "financingShare cannot be zero"); //Cannot be zero
+        require(stakeSharePrice_ > 0, "subscribeLimitTime_ cannot be zero"); //Not turned on
+        require(subscribeTime_ > 0, "subscribeTime_ cannot be zero"); //Cannot be zero
+        require(subscribeLimitTime_ > 0, "subscribeLimitTime_ cannot be zero"); //Not turned on
 
-        financingShare = financingShare_; // 融资融资股
+        financingShare = financingShare_; //Financing Unit
         stakeSharePrice = stakeSharePrice_;
         subscribeTime = subscribeTime_;
         subscribeLimitTime = subscribeLimitTime_;
@@ -276,12 +276,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    // @param stock 认购数
-    // @param amount 5% stake
     function subscribe(uint256 stock) public nonReentrant {
         require(stock > 0, "cannot be less than zero");
-        require(financingShare * 2 > totalSold, "sold out"); // 售完
-        require(subscribeTime > 0, "UnStart subscribe"); //  未开启
+        require(financingShare * 2 > totalSold, "sold out"); //Sold out
+        require(subscribeTime > 0, "UnStart subscribe"); //Not turned on
         require(stock <= maxNftAMOUNT, "stock > 10");
         require(user[_msgSender()].amount <= 100, "total stock must < 100");
 
@@ -289,7 +287,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             subscribeTime + subscribeLimitTime > block.timestamp,
             "time expired"
         );
-        require(stock > 0, "Not yet subscribed"); // 数量 大于0
+        require(stock > 0, "Not yet subscribed"); //Quantity greater than 0
 
         if (financingShare * 2 - totalSold < stock) {
             stock = financingShare * 2 - totalSold;
@@ -310,18 +308,18 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    //    退款用户认缴
+    //Refund subscribed by the user
     function unSubscribe(
         uint256 expire,
         bytes memory signature
     ) public nonReentrant {
-        require(user[_msgSender()].exist == true, "company  does not exist"); //   用户不存在
+        require(user[_msgSender()].exist == true, "company  does not exist"); //The user does not exist
         require(user[_msgSender()].unStake == false, "company  does not exist"); //
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(_msgSender(), expire, address(this), "dfb08b8d")
         );
-        
+
         _checkRole(
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
@@ -340,7 +338,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     ) public nonReentrant {
         require(expire > block.timestamp, "not yet expired");
         require(miner[_msgSender()].exist == true, "participated");
-        require(miner[_msgSender()].hadStaked == false, "participated"); // 参与过了
+        require(miner[_msgSender()].hadStaked == false, "participated"); //Participated
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -393,7 +391,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit unMinerStakeLog(_msgSender(), amount, block.timestamp);
     }
 
-    // 方案质押
+    //Program staking
     function planStake(
         companyType role,
         uint256 totalAmount,
@@ -401,8 +399,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 expire,
         bytes memory signature
     ) public nonReentrant {
-        require(expire > block.timestamp, "not yet expired"); // 还没到期
-        require(companyList[role].exist == false, "participated"); // 参与过了
+        require(expire > block.timestamp, "not yet expired"); //It hasn't expired yet
+        require(companyList[role].exist == false, "participated"); //Participated
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -426,9 +424,9 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit planStakeLog(_msgSender(), stakeAmount, block.timestamp, role);
     }
 
-    //    退款方案方质押
+    //Refund stake
     function unPlanStake(companyType role) public nonReentrant onlyRole(ADMIN) {
-        require(companyList[role].exist == true, "company  does not exist"); //   用户不存在
+        require(companyList[role].exist == true, "company  does not exist"); //The user does not exist
         require(
             companyList[role].unStake == false,
             "cannot be repeated unStake"
@@ -461,12 +459,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         financAddr = addr;
     }
 
-    // todo 返回质押  minerStake
+    //todo returns staking minerStake
     function IntentMoneyAmount(address account) public view returns (uint256) {
         return miner[account].amount;
     }
 
-    // 查看认缴金额
+    //Check the subscription amount
     function viewSubscribe(address account) public view returns (uint256) {
         return user[account].amount;
     }
@@ -484,14 +482,14 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit payDDLog(DDAddr, ddFee, block.timestamp);
     }
 
-    // 把矿工的质押金支付给spv
+    //Pay the miner's pledge deposit to the SPV
     function payMinerToSpv(
         uint256 amount,
         uint256 expire,
         bytes memory signature
     ) public onlyRole(ADMIN) {
-        require(amount >= 0, "address is null"); //  不等于零
-        require(isPayMinerToSpv == false, "already paid"); //   已经支付了
+        require(amount >= 0, "address is null"); //Not equal to zero
+        require(isPayMinerToSpv == false, "already paid"); //Already paid
         bytes32 msgSplice = keccak256(
             abi.encodePacked(address(this), "4afc651e", amount, expire)
         );
@@ -504,7 +502,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         emit payMinerToSpvLog(spvAddr, amount, block.timestamp);
     }
 
-    // 紧急提现
+    //Emergency withdrawals
     function withdraw(uint256 amount, address addr) public onlyRole(OWNER) {
         usdt.safeTransfer(addr, amount);
     }
