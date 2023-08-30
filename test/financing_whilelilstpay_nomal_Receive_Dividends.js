@@ -556,4 +556,12 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
 
     //insuranceReceive
     it("testing insuranceReceive() should assert true", insuranceReceive)
+
+    it("testing insuranceReceiveTry() should assert true", async function(){
+        try {
+            await insuranceReceive()
+        } catch (error) {
+            assert(error.message.includes("Refusal to contract transactions"), "Expected an error with message 'Error message'.");
+        }
+    })
 })
