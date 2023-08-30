@@ -276,7 +276,7 @@ contract Operation is AccessControl, ReentrancyGuard {
             _msgSender() == addrType.electrStakeAddr,
             "user does not have permission"
         );
-        require(electrStakeLock == false, "not FINISH status");
+        require(electrStakeLock == false, "You have claimed it");
         //To determine the first claim requires pledge electricity TODO time calculation formula
         electrStakeLock = true;
         USDT.safeTransfer(addrType.electrStakeAddr, feeType.electrStakeFee);

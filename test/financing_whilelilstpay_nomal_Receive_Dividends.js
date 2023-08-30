@@ -1,5 +1,5 @@
 const Web3 = require('web3');
-const Dividends = artifacts.require("Dividends");
+const Dividends = artifacts.require("Operation");
 const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const Financing = artifacts.require("Financing");
@@ -341,7 +341,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         const dividends = await Dividends.at(await financing.dividends());
         const amount = await tools.USDTToWei(usdt, '1000')
         await tools.approve(usdt, dividends.address, amount, user1)
-        const tx = await dividends.payment(amount, { from: user1 })
+        const tx = await dividends.income(amount, { from: user1 })
         console.log(`payment tx ${tx.tx}`)
         const lastExecuted = await dividends.lastExecuted()
         console.log((`lastExecuted ${lastExecuted}`))
@@ -486,75 +486,74 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         try {
             await electrStake()
         } catch (error) {
-            assert(error.message.includes("Refusal to contract transactions"), "Expected an error with message 'Error message'.");
+            assert(error.message.includes("You have claimed it"), "Expected an error with message 'Error message'.");
         }
     })
 
-    // const energyReceive = async function () {
+    const energyReceive = async function () {
+        await tools.timeout(7000)
+
+        const electrAddr = accounts[2];
+
+        const financing = await Financing.deployed()
+        const dividends = await Dividends.at(await financing.dividends());
+        const usdt = await USDTTest.deployed()
+
+        const wei = await tools.USDTFromWei(usdt, await tools.balanceOF(usdt.address, financing.address))
+        console.log(`contract balance of ${wei}`)
+
+        const addrType = await financing.addrType()
+        const feeType = await financing.feeType()
+        const limitTimeType = await financing.limitTimeType()
+
+        const electrStartTime = await financing.electrStartTime()
+        console.log(`electrStartTime ${electrStartTime}`)
+        // const origPlatformFeeAddrBalance = await tools.balanceOF(usdt.address, platformFeeAddr)
+        //addrType.builderAddr
+        // 判断第一次领取 需要质押电力
+        // uint256 months = (block.timestamp - electrStartTime) /
+        //     limitTimeType.electrIntervalTime;
+        // uint256 amount = months * feeType.electrFee;
+        // electrStartTime += months * limitTimeType.electrIntervalTime;
+        // // 判断第一次押金
+        // usdt.safeTransfer(addrType.electrAddr, amount);
 
 
-    //     await tools.timeout(7000)
+        const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
 
-    //     const electrAddr = accounts[2];
+        console.log(`feeType.electrFee ${feeType.electrFee}`)
+        console.log(`limitTimeType.electrIntervalTime ${limitTimeType.electrIntervalTime}`)
 
-    //     const financing = await Financing.deployed()
-    //     const usdt = await USDTTest.deployed()
+        const electrStake = await dividends.energyReceive({ from: electrAddr })
+        assert.equal(electrStake.receipt.status, true, "electrStake failed !")
+        console.log(`energyReceive tx ${electrStake.tx}`)
 
-    //     const wei = await tools.USDTFromWei(usdt, await tools.balanceOF(usdt.address, financing.address))
-    //     console.log(`contract balance of ${wei}`)
+        // const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+        // await tools.AssertUSDT(usdt.address, addrType.electrAddr, feeType.electrFee.add(origbuilderAddrBalance))
+        // await tools.AssertUSDT(usdt.address, platformFeeAddr, feeType.feeType.publicSalePlatformFee.add(origPlatformFeeAddrBalance))
+    }
+    //energyReceive
+    it("testing energyReceive() should assert true", energyReceive)
 
-    //     const addrType = await financing.addrType()
-    //     const feeType = await financing.feeType()
-    //     const limitTimeType = await financing.limitTimeType()
+    const insuranceReceive = async function () {
 
-    //     const electrStartTime = await financing.electrStartTime()
-    //     console.log(`electrStartTime ${electrStartTime}`)
-    //     // const origPlatformFeeAddrBalance = await tools.balanceOF(usdt.address, platformFeeAddr)
-    //     //addrType.builderAddr
-    //     // 判断第一次领取 需要质押电力
-    //     // uint256 months = (block.timestamp - electrStartTime) /
-    //     //     limitTimeType.electrIntervalTime;
-    //     // uint256 amount = months * feeType.electrFee;
-    //     // electrStartTime += months * limitTimeType.electrIntervalTime;
-    //     // // 判断第一次押金
-    //     // usdt.safeTransfer(addrType.electrAddr, amount);
+        const insuranceAddr = accounts[4];
+        // usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
+        // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed()
+        const dividends = await Dividends.at(await financing.dividends());
 
+        const addrType = await financing.addrType()
+        const feeType = await financing.feeType()
 
-    //     const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
+        //addrType.insuranceAddr
+        const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.insuranceAddr)
+        const electrStake = await dividends.insuranceReceive({ from: insuranceAddr })
+        assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+        await tools.AssertUSDT(usdt.address, addrType.insuranceAddr, feeType.insuranceFee.add(origbuilderAddrBalance))
+    }
 
-    //     console.log(`feeType.electrFee ${feeType.electrFee}`)
-    //     console.log(`limitTimeType.electrIntervalTime ${limitTimeType.electrIntervalTime}`)
-
-    //     const electrStake = await financing.energyReceive({ from: electrAddr })
-    //     assert.equal(electrStake.receipt.status, true, "electrStake failed !")
-
-    //     await tools.printfLogs(electrStake)
-
-    //     // const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.builderAddr)
-    //     // await tools.AssertUSDT(usdt.address, addrType.electrAddr, feeType.electrFee.add(origbuilderAddrBalance))
-    //     // await tools.AssertUSDT(usdt.address, platformFeeAddr, feeType.feeType.publicSalePlatformFee.add(origPlatformFeeAddrBalance))
-    // }
-    // //energyReceive
-    // it("testing energyReceive() should assert true", energyReceive)
-
-    // const insuranceReceive = async function () {
-
-    //     const insuranceAddr = accounts[4];
-    //     // usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
-    //     // usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
-    //     const financing = await Financing.deployed()
-    //     const usdt = await USDTTest.deployed()
-
-    //     const addrType = await financing.addrType()
-    //     const feeType = await financing.feeType()
-
-    //     //addrType.insuranceAddr
-    //     const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.insuranceAddr)
-    //     const electrStake = await financing.insuranceReceive({ from: insuranceAddr })
-    //     assert.equal(electrStake.receipt.status, true, "electrStake failed !");
-    //     await tools.AssertUSDT(usdt.address, addrType.insuranceAddr, feeType.insuranceFee.add(origbuilderAddrBalance))
-    // }
-
-    // //insuranceReceive
-    // it("testing insuranceReceive() should assert true", insuranceReceive)
+    //insuranceReceive
+    it("testing insuranceReceive() should assert true", insuranceReceive)
 })

@@ -3,7 +3,7 @@ const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const Financing = artifacts.require("Financing");
 const ethers = require("ethers");
-const Dividends = artifacts.require("Dividends");
+const Dividends = artifacts.require("Operation");
 var tools = require('../tools/web3-utils');
 
 
