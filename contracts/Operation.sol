@@ -15,7 +15,7 @@ contract Operation is AccessControl, ReentrancyGuard {
     uint256 public lastExecuted;
     mapping(uint256 => uint256) monthlyInfo; //The total amount paid each month
     struct dividendsInfo {
-        bool exist; // 
+        bool exist; //
         uint256 totalMonthlyBalance; //Total monthly balance
         uint256 dividend; //dividend
         mapping(uint256 => bool) isReceive; //Receive
@@ -78,7 +78,7 @@ contract Operation is AccessControl, ReentrancyGuard {
     struct LimitTimeType {
         uint256 whitelistPaymentLimitTime; //Whitelist time limit
         uint256 publicSaleLimitTime; //public sale for a limited time
-        uint256 startBuildLimitTime;// Start of construction time
+        uint256 startBuildLimitTime; // Start of construction time
         uint256 bargainLimitTime; //Pick up the start time
         uint256 remainPaymentLimitTime; //Whitelist start time
         uint256 electrIntervalTime; //Power interval
@@ -137,12 +137,13 @@ contract Operation is AccessControl, ReentrancyGuard {
         uint256 time_
     );
     event insuranceReceiveLog(
+        uint256 year_,
         address energyAddr_,
         uint256 amount_,
         uint256 time_
     );
 
-     event buildInsuranceReceiveLog(
+    event buildInsuranceReceiveLog(
         address energyAddr_,
         uint256 amount_,
         uint256 time_
@@ -223,6 +224,7 @@ contract Operation is AccessControl, ReentrancyGuard {
             _msgSender() == addrType.operationsAddr,
             "user does not have permission"
         );
+        require(operationStartTime > 0, "Operation start time must be greater than 0");
         require(
             operationStartTime + limitTimeType.operationIntervalTime <
                 block.timestamp,
@@ -245,26 +247,18 @@ contract Operation is AccessControl, ReentrancyGuard {
             _msgSender() == addrType.spvAddr,
             "user does not have permission"
         );
+        require(spvStartTime > 0, "SPV start time must be greater than 0");
+        require(
+            spvStartTime + limitTimeType.spvIntervalTime < block.timestamp,
+            "Refusal to contract transactions"
+        );
+        uint256 year = (block.timestamp - spvStartTime) /
+            limitTimeType.spvIntervalTime;
 
-        uint256 amount;
-        uint256 year = 1;
-        if (spvStartTime == 0) {
-            amount = feeType.spvFee;
-            USDT.safeTransfer(addrType.spvAddr, amount);
-            spvStartTime = block.timestamp;
-        } else {
-            require(
-                spvStartTime + limitTimeType.spvIntervalTime < block.timestamp,
-                "Refusal to contract transactions"
-            );
-            year =
-                (block.timestamp - spvStartTime) /
-                limitTimeType.spvIntervalTime;
+        uint256 amount = year * feeType.spvFee;
+        spvStartTime += year * limitTimeType.spvIntervalTime;
+        USDT.safeTransfer(addrType.spvAddr, amount);
 
-            amount = year * feeType.spvFee;
-            spvStartTime += year * limitTimeType.spvIntervalTime;
-            USDT.safeTransfer(addrType.spvAddr, amount);
-        }
         emit spvReceiveLog(addrType.spvAddr, amount, year, block.timestamp);
     }
 
@@ -294,6 +288,10 @@ contract Operation is AccessControl, ReentrancyGuard {
             "user does not have permission"
         );
         require(
+            electrStartTime > 0,
+            "Electr start time must be greater than 0"
+        );
+        require(
             electrStartTime + limitTimeType.electrIntervalTime <
                 block.timestamp,
             "Refusal to contract transactions"
@@ -319,24 +317,23 @@ contract Operation is AccessControl, ReentrancyGuard {
             _msgSender() == addrType.insuranceAddr,
             "user does not have permission"
         );
-        uint256 amount;
-        if (insuranceStartTime == 0) {
-            amount = feeType.insuranceFee;
-            USDT.safeTransfer(addrType.insuranceAddr, amount);
-            insuranceStartTime = block.timestamp;
-        } else {
-            require(
-                insuranceStartTime + limitTimeType.insuranceIntervalTime <
-                    block.timestamp,
-                "Refusal to contract transactions"
-            );
-            uint256 year = (block.timestamp - insuranceStartTime) /
-                limitTimeType.insuranceIntervalTime;
-            amount = year * feeType.insuranceFee;
-            insuranceStartTime += year * limitTimeType.insuranceIntervalTime;
-            USDT.safeTransfer(addrType.insuranceAddr, amount);
-        }
+        require(
+            insuranceStartTime > 0,
+            "Insurance start time must be greater than 0"
+        );
+        require(
+            insuranceStartTime + limitTimeType.insuranceIntervalTime <
+                block.timestamp,
+            "Refusal to contract transactions"
+        );
+        uint256 year = (block.timestamp - insuranceStartTime) /
+            limitTimeType.insuranceIntervalTime;
+        uint256 amount = year * feeType.insuranceFee;
+        insuranceStartTime += year * limitTimeType.insuranceIntervalTime;
+        USDT.safeTransfer(addrType.insuranceAddr, amount);
+
         emit insuranceReceiveLog(
+            year,
             addrType.insuranceAddr,
             amount,
             block.timestamp

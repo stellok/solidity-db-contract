@@ -68,10 +68,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     uint256 startBuildTime; //Start of construction time
     uint256 bargainTime; //Pick up the start time
     uint256 public remainPaymentTime; //Whitelist start time
-    uint256 public electrStartTime;// The last power settlement time
-    uint256 operationStartTime; //The last O&M settlement time
-    uint256 insuranceStartTime; //Time of settlement of the insurance sub-insurance
-    uint256 spvStartTime; // Time of settlement of the insurance sub-insurance
+    uint256 public electrStartTime; // The last power settlement time
+    uint256 public operationStartTime; //The last O&M settlement time
+    uint256 public insuranceStartTime; //Time of settlement of the insurance sub-insurance
+    uint256 public spvStartTime; // Time of settlement of the insurance sub-insurance
 
     struct FeeType {
         uint256 firstBuildFee; //First build model
@@ -83,14 +83,14 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         uint256 insuranceFee; //Warranty fee
         uint256 spvFee; //Trust management fees
         uint256 publicSalePlatformFee; //Public sale platform fee
-        uint256 remainPlatformFee;// Public sale platform fee
+        uint256 remainPlatformFee; // Public sale platform fee
     }
     FeeType public feeType;
 
     struct LimitTimeType {
         uint256 whitelistPaymentLimitTime; //The whitelist is time-limited
         uint256 publicSaleLimitTime; //Limited time for public sale
-        uint256 startBuildLimitTime;// Start of construction time
+        uint256 startBuildLimitTime; // Start of construction time
         uint256 bargainLimitTime; //Pick up the start time
         uint256 remainPaymentLimitTime; //Whitelist start time
         uint256 electrIntervalTime; //Power interval
@@ -185,8 +185,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         address platformFeeAddr_,
         address founderAddr_,
         FeeType memory feeList_, // fees
-        AddrType memory addrList_, // address  
-        LimitTimeType memory limitTimeList_, // times 
+        AddrType memory addrList_, // address
+        LimitTimeType memory limitTimeList_, // times
         ShareType memory shareList_, // Share
         string memory uri_1,
         string memory uri_2,
@@ -207,7 +207,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         require(feeList_.remainBuildFee != 0, "remainBuildFee == 0"); //Remaining construction money
         require(feeList_.operationsFee != 0, "operationsFee == 0"); //Shipping costs
         require(feeList_.electrFee != 0, "electrFee== 0"); //Electricity
-        require(feeList_.electrStakeFee != 0, "electrStakeFee == 0");// Stake electricity charges
+        require(feeList_.electrStakeFee != 0, "electrStakeFee == 0"); // Stake electricity charges
         require(feeList_.buildInsuranceFee != 0, "buildInsuranceFee == 0"); //Construction insurance premium
         require(feeList_.insuranceFee != 0, "insuranceFee == 0"); //Warranty fee
         require(feeList_.spvFee != 0, "spvFee== 0"); //Trust management fees
@@ -336,7 +336,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             (shareType.firstSharePrice - shareType.stakeSharePrice),
             block.timestamp
         );
-       // Minting voucher NFTs
+        // Minting voucher NFTs
         receiptNFT.mint(_msgSender(), amount);
         _whetherFirstPaymentFinish();
     }
@@ -549,7 +549,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             schedule == ActionChoices.remainPayment,
             "not remainPayment status"
         );
-        //TODO
         require(
             remainPaymentTime + limitTimeType.remainPaymentLimitTime >
                 block.timestamp,
@@ -559,8 +558,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         if (issuedTotalShare < shareType.financingShare) {
             bargainTime = block.timestamp;
             schedule = ActionChoices.Bargain;
-            //TODO
-            //NFT.tokenIdBurn(receiptToken);
             receiptNFT.pause();
             emit startBargainLog(
                 issuedTotalShare - shareType.financingShare,
@@ -614,7 +611,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
             "RemainPayment time is not up"
         );
-    
+
         if (issuedTotalShare < shareType.financingShare) {
             schedule = ActionChoices.FAILED;
             emit whetherFinishLog(false, block.timestamp);
@@ -669,11 +666,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     function checkDone() public nonReentrant {
         require(schedule == ActionChoices.FINISH, "not FINISH status");
         require(dividends == address(0), "contract had deployed!");
+        spvStartTime = block.timestamp;
+        insuranceStartTime = block.timestamp;
         dividends = deployDividends();
         usdt.safeTransfer(dividends, usdt.balanceOf(address(this)));
-    }
-
-    function getChoice() public view returns (ActionChoices) {
-        return schedule;
     }
 }
