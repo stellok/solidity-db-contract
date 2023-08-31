@@ -121,7 +121,12 @@ contract Operation is AccessControl, ReentrancyGuard {
         feeType = feeList_;
     }
 
-    event operationsReceiveLog(address addr_, uint256 amount_, uint256 time_);
+    event operationsReceiveLog(
+        uint256 mouth,
+        address addr_,
+        uint256 amount_,
+        uint256 time_
+    );
     event spvReceiveLog(
         address addr_,
         uint256 amount_,
@@ -224,7 +229,10 @@ contract Operation is AccessControl, ReentrancyGuard {
             _msgSender() == addrType.operationsAddr,
             "user does not have permission"
         );
-        require(operationStartTime > 0, "Operation start time must be greater than 0");
+        require(
+            operationStartTime > 0,
+            "Operation start time must be greater than 0"
+        );
         require(
             operationStartTime + limitTimeType.operationIntervalTime <
                 block.timestamp,
@@ -238,7 +246,12 @@ contract Operation is AccessControl, ReentrancyGuard {
         uint256 amount = months * feeType.operationsFee;
         operationStartTime += months * limitTimeType.operationIntervalTime;
         USDT.safeTransfer(addrType.operationsAddr, amount);
-        emit operationsReceiveLog(_msgSender(), amount, block.timestamp);
+        emit operationsReceiveLog(
+            months,
+            _msgSender(),
+            amount,
+            block.timestamp
+        );
     }
 
     //SPV pickup

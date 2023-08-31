@@ -190,7 +190,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount,
         uint256 expire,
         bytes memory signature
-    ) public nonReentrant {
+    ) public nonReentrant whenNotPaused {
         require(expire > block.timestamp, "not yet expired"); //It hasn't expired yet
         require(miner[_msgSender()].exist == false, "participated"); // Participated
 
@@ -257,7 +257,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeSharePrice_,
         uint256 subscribeTime_,
         uint256 subscribeLimitTime_
-    ) public nonReentrant onlyRole(PLATFORM) {
+    ) public nonReentrant whenNotPaused onlyRole(PLATFORM) {
         require(financingShare_ > 0, "financingShare cannot be zero"); //Cannot be zero
         require(stakeSharePrice_ > 0, "subscribeLimitTime_ cannot be zero"); //Not turned on
         require(subscribeTime_ > 0, "subscribeTime_ cannot be zero"); //Cannot be zero
@@ -276,7 +276,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
     }
 
-    function subscribe(uint256 stock) public nonReentrant {
+    function subscribe(uint256 stock) public nonReentrant whenNotPaused {
         require(stock > 0, "cannot be less than zero");
         require(financingShare * 2 > totalSold, "sold out"); //Sold out
         require(subscribeTime > 0, "UnStart subscribe"); //Not turned on
@@ -335,7 +335,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeAmount,
         uint256 expire,
         bytes memory signature
-    ) public nonReentrant {
+    ) public nonReentrant whenNotPaused{
         require(expire > block.timestamp, "not yet expired");
         require(miner[_msgSender()].exist == true, "participated");
         require(miner[_msgSender()].hadStaked == false, "participated"); //Participated
@@ -398,7 +398,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeAmount,
         uint256 expire,
         bytes memory signature
-    ) public nonReentrant {
+    ) public nonReentrant whenNotPaused {
         require(expire > block.timestamp, "not yet expired"); //It hasn't expired yet
         require(companyList[role].exist == false, "participated"); //Participated
         bytes32 msgSplice = keccak256(
@@ -469,7 +469,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         return user[account].amount;
     }
 
-    function pause() public whenNotPaused onlyRole(ADMIN) {
+    function pause() public whenNotPaused onlyRole(PLATFORM) {
         _pause();
     }
 

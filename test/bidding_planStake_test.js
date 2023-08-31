@@ -32,7 +32,6 @@ contract("BiddingTest-planStake", (accounts) => {
 
     let user = accounts[4]
     let owner = accounts[0]
-    let role = 1
     let stakeAmount, totalAmount
 
     before(async function () {
@@ -48,12 +47,12 @@ contract("BiddingTest-planStake", (accounts) => {
 
     });
 
-    it("testing planStake() should assert true", async function () {
+    const planStake = async function (role) {
         //subscribe
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
 
-        let expire = 1690616038
+        let expire = 1693641100
 
 
         //sign message
@@ -84,6 +83,21 @@ contract("BiddingTest-planStake", (accounts) => {
         assert.equal(balanceOf.toString(), totalAmount.toString(), "usdt balance transfer failed !");
 
         console.log(`logs: ${JSON.stringify(sub.receipt.logs, null, 3)}`)
+    }
+
+    it("testing planStake() should assert true", async function () {
+        await planStake(1)
+    });
+
+    it("testing stop_planStake() should assert true", async function () {
+        const bid = await BiddingTest.deployed();
+        const tx = await bid.pause({from: owner})
+        assert.equal(tx.receipt.status, true, "pause failed !");
+        try {
+            await planStake(2)
+        } catch (error) {
+            assert(error.message.includes("Pausable: paused"), "Expected an error with message 'Error message'.");
+        }
     });
 
     //unPlanStake
@@ -96,11 +110,11 @@ contract("BiddingTest-planStake", (accounts) => {
 
         console.log(`origUsdtBalance : ${await tools.USDTFromWei(usdt, origUsdtBalance)}`)
 
-        let sub = await bid.unPlanStake(role, { from: owner })
+        let sub = await bid.unPlanStake(1, { from: owner })
         assert.equal(sub.receipt.status, true, "planStake failed !");
 
         let balanceOf = await usdt.balanceOf(user);
-        console.log(`Now balance : ${await tools.USDTFromWei(usdt,balanceOf)}`)
+        console.log(`Now balance : ${await tools.USDTFromWei(usdt, balanceOf)}`)
 
         assert.equal(balanceOf.toString(), web3.utils.toBN(totalAmount).add(origUsdtBalance).toString(), "withdraw failed !");
 
