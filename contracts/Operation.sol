@@ -363,6 +363,10 @@ contract Operation is AccessControl, ReentrancyGuard {
         return (block.timestamp - lastExecuted) / expire;
     }
 
+    function mouthTotal(uint256 index) public view returns (uint256) {
+        return monthlyInfo[index];
+    }
+
     function isReceive(
         uint256 index,
         uint256 tokenId
