@@ -168,6 +168,7 @@ contract Operation is AccessControl, ReentrancyGuard {
         require(index < phaseIndex(), "index must < current phase");
         require(monthlyInfo[index] > 0, "this Phase total amount is 0");
         require(receiveRecord[index].exist == false, "has been comforted");
+        require(monthlyInfo[index] - reserveFund > 0, "Not available");
         uint256 total = monthlyInfo[index] - reserveFund;
         receiveRecord[index].exist = true;
         receiveRecord[index].totalMonthlyBalance = total;
