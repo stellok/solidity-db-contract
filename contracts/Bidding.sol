@@ -31,12 +31,18 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bool exist; //exist
     }
 
-    struct minerStakeInfo {
+    struct minerInfo {
         uint256 amount; //Number of shares
         uint256 stakeAmount;
         uint256 nonce;
+        bool exist;
+    }
+
+    struct minerStakeInfo {
+        uint256 nonce;
         bool unStake;
         bool hadStaked;
+        uint256 stakeAmount;
         bool exist;
     }
 
@@ -59,7 +65,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     mapping(companyType => companyStakeInfo) companyList;
 
     mapping(address => userStakeInfo) public user; // user
-    mapping(address => minerStakeInfo) public miner; //miner
+    mapping(address => mapping(uint => minerInfo)) public miner; //miner
+    mapping(address => minerStakeInfo) public stakeMiner; //miner
 
     IERC20 public usdt; // usdt
 
@@ -95,7 +102,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     event payDDFeeLog(address account, uint256 amount, uint256 time);
     event refundDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
-    event unMinerIntentMoneyLog(address account, uint256 amount, uint256 time);
+    event unMinerIntentMoneyLog(
+        address account,
+        uint256 amount,
+        uint256 time,
+        uint256 id
+    );
     event minerIntentMoneyLog(
         address addr,
         uint256 amount,
@@ -198,7 +210,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes memory signature
     ) public nonReentrant whenNotPaused {
         require(expire > block.timestamp, "not yet expired"); //It hasn't expired yet
-        require(miner[_msgSender()].exist == false, "participated"); // Participated
+        require(miner[_msgSender()][id].exist == false, "participated"); // Participated
 
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
@@ -217,22 +229,23 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
 
         usdt.safeTransferFrom(_msgSender(), address(this), amount);
-        miner[_msgSender()].amount += amount;
-        miner[_msgSender()].exist = true;
+        miner[_msgSender()][id].amount += amount;
+        miner[_msgSender()][id].exist = true;
         emit minerIntentMoneyLog(_msgSender(), amount, block.timestamp, id);
     }
 
     //Refund miner staking
     function unMinerIntentMoney(
+        uint256 id,
         uint256 expire,
         uint256 amount,
         uint256 nonce,
         bytes memory signature
     ) public nonReentrant {
-        require(miner[_msgSender()].exist == true, "miner  does not exist"); //The user does not exist
-        require(miner[_msgSender()].nonce == nonce, "nonce invalid");
+        require(miner[_msgSender()][id].exist == true, "miner  does not exist"); //The user does not exist
+        require(miner[_msgSender()][id].nonce == nonce, "nonce invalid");
         require(
-            miner[_msgSender()].amount >= amount && amount > 0,
+            miner[_msgSender()][id].amount >= amount && amount > 0,
             "amount invalid"
         );
         require(expire > block.timestamp, "not yet expired"); //It hasn't expired yet
@@ -240,11 +253,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
-                "b13c8aa8",
+                "3077df07",
                 _msgSender(),
                 expire,
                 amount,
-                nonce
+                nonce,
+                id
             )
         );
         _checkRole(
@@ -252,10 +266,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
 
-        miner[_msgSender()].amount -= amount;
-        miner[_msgSender()].nonce += 1;
+        miner[_msgSender()][id].amount -= amount;
+        miner[_msgSender()][id].nonce += 1;
         usdt.safeTransfer(_msgSender(), amount);
-        emit unMinerIntentMoneyLog(_msgSender(), amount, block.timestamp);
+        emit unMinerIntentMoneyLog(_msgSender(), amount, block.timestamp, id);
     }
 
     //Open subscription
@@ -344,8 +358,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes memory signature
     ) public nonReentrant whenNotPaused {
         require(expire > block.timestamp, "not yet expired");
-        require(miner[_msgSender()].exist == true, "participated");
-        require(miner[_msgSender()].hadStaked == false, "participated"); //Participated
+        require(stakeMiner[_msgSender()].exist == true, "participated");
+        require(stakeMiner[_msgSender()].hadStaked == false, "participated"); //Participated
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -360,8 +374,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
         usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount);
-        miner[_msgSender()].stakeAmount = stakeAmount;
-        miner[_msgSender()].hadStaked = true;
+        stakeMiner[_msgSender()].stakeAmount = stakeAmount;
+        stakeMiner[_msgSender()].hadStaked = true;
         emit minerStakeLog(_msgSender(), stakeAmount, block.timestamp);
     }
 
@@ -371,10 +385,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 nonce,
         bytes memory signature
     ) public nonReentrant {
-        require(miner[_msgSender()].exist == true, "miner  does not exist"); //
-        require(miner[_msgSender()].nonce == nonce, "nonce invalid"); //
+        require(stakeMiner[_msgSender()].exist == true, "miner  does not exist"); //
+        require(stakeMiner[_msgSender()].nonce == nonce, "nonce invalid"); //
         require(
-            miner[_msgSender()].stakeAmount >= amount && amount > 0,
+            stakeMiner[_msgSender()].stakeAmount >= amount && amount > 0,
             "amount invalid"
         );
         require(expire > block.timestamp, "not yet expired"); //
@@ -392,8 +406,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             PLATFORM,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
-        miner[_msgSender()].stakeAmount -= amount;
-        miner[_msgSender()].nonce += 1;
+        stakeMiner[_msgSender()].stakeAmount -= amount;
+        stakeMiner[_msgSender()].nonce += 1;
         usdt.safeTransfer(_msgSender(), amount);
         emit unMinerStakeLog(_msgSender(), amount, block.timestamp);
     }
@@ -458,7 +472,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     function StakeAmount(address account) public view returns (uint256) {
-        return miner[account].stakeAmount;
+        return stakeMiner[account].stakeAmount;
     }
 
     function setFinancing(address addr) public onlyRole(PLATFORM) {
@@ -467,8 +481,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //todo returns staking minerStake
-    function IntentMoneyAmount(address account) public view returns (uint256) {
-        return miner[account].amount;
+    function IntentMoneyAmount(address account,uint256 id) public view returns (uint256) {
+        return miner[account][id].amount;
     }
 
     //Check the subscription amount
@@ -514,7 +528,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         usdt.safeTransfer(addr, amount);
     }
 
-    function isParticipated(address account) public view returns (bool) {
-        return miner[account].exist;
+    function isParticipated(address account,uint256 id) public view returns (bool) {
+        return miner[account][id].exist;
     }
 }
