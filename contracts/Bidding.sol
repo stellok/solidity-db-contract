@@ -96,7 +96,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     event refundDDFeeLog(address account, uint256 amount, uint256 time);
     event unMinerStakeLog(address account, uint256 amount, uint256 time);
     event unMinerIntentMoneyLog(address account, uint256 amount, uint256 time);
-    event minerIntentMoneyLog(address addr, uint256 id, uint256 time);
+    event minerIntentMoneyLog(
+        address addr,
+        uint256 amount,
+        uint256 time,
+        uint256 id
+    );
     event minerStakeLog(address addr, uint256 id, uint256 time);
     event unPlanStakeLog(
         address addr,
@@ -187,6 +192,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
 
     //Miner staking
     function minerIntentMoney(
+        uint256 id,
         uint256 amount,
         uint256 expire,
         bytes memory signature
@@ -197,10 +203,11 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
-                "6b9119e6",
+                "6d14f0d8",
                 _msgSender(),
                 amount,
-                expire
+                expire,
+                id
             )
         );
 
@@ -212,7 +219,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         usdt.safeTransferFrom(_msgSender(), address(this), amount);
         miner[_msgSender()].amount += amount;
         miner[_msgSender()].exist = true;
-        emit minerIntentMoneyLog(_msgSender(), amount, block.timestamp);
+        emit minerIntentMoneyLog(_msgSender(), amount, block.timestamp, id);
     }
 
     //Refund miner staking
@@ -335,7 +342,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeAmount,
         uint256 expire,
         bytes memory signature
-    ) public nonReentrant whenNotPaused{
+    ) public nonReentrant whenNotPaused {
         require(expire > block.timestamp, "not yet expired");
         require(miner[_msgSender()].exist == true, "participated");
         require(miner[_msgSender()].hadStaked == false, "participated"); //Participated

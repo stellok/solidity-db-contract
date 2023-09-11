@@ -549,22 +549,25 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
             schedule == ActionChoices.remainPayment,
             "not remainPayment status"
         );
-        require(
-            remainPaymentTime + limitTimeType.remainPaymentLimitTime >
-                block.timestamp,
-            "RemainPayment time is not up"
-        );
-        //Time expires
-        if (issuedTotalShare < shareType.financingShare) {
-            bargainTime = block.timestamp;
-            schedule = ActionChoices.Bargain;
-            receiptNFT.pause();
-            emit startBargainLog(
-                issuedTotalShare - shareType.financingShare,
-                block.timestamp
-            );
+
+        if (
+            (remainPaymentTime + limitTimeType.remainPaymentLimitTime) >
+            block.timestamp
+        ) {
+            if (issuedTotalShare < shareType.financingShare) {
+                bargainTime = block.timestamp;
+                schedule = ActionChoices.Bargain;
+                receiptNFT.pause();
+                emit startBargainLog(
+                    issuedTotalShare - shareType.financingShare,
+                    block.timestamp
+                );
+            } else {
+                _whetherFinish();
+            }
         } else {
-            _whetherFinish();
+            schedule = ActionChoices.FAILED;
+            emit whetherFinishLog(false, block.timestamp);
         }
     }
 

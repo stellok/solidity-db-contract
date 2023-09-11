@@ -75,7 +75,7 @@ contract NFT721Impl is
         if (bytes(_tokenURI).length > 0) {
             return _tokenURI;
         }
-        return string(abi.encodePacked(baseURI, tokenId_.toString(), ".json"));
+        return string(abi.encodePacked(baseURI, tokenId_.toString()));
     }
 
     function setBaseURI(string memory baseURI_) external onlyOwner {
