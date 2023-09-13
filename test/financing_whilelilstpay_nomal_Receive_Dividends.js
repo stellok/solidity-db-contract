@@ -566,4 +566,22 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
             assert(error.message.includes("Refusal to contract transactions"), "Expected an error with message 'Error message'.");
         }
     })
+
+    const trustManagementReceive = async function() {
+        const trustAddr = accounts[5];
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed()
+        const dividends = await Dividends.at(await financing.dividends());
+
+        const addrType = await financing.addrType()
+        const feeType = await financing.feeType()
+
+        //addrType.insuranceAddr
+        const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.trustAddr)
+        const electrStake = await dividends.trustManagementReceive({ from: trustAddr })
+        assert.equal(electrStake.receipt.status, true, "electrStake failed !");
+        console.log(`trustManagementReceive tx ${electrStake.tx}`)
+    }
+
+    it("testing trustManagementReceive() should assert true", trustManagementReceive)
 })

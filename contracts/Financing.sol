@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./NFT721Impl.sol";
 import "./Operation.sol";
+import "./FinancType.sol";
 
 interface IBidding {
     //return the subscription quantity,
@@ -18,7 +19,7 @@ interface IBidding {
 }
 
 //Equity financing
-contract Financing is AccessControl, Pausable, ReentrancyGuard {
+contract Financing is AccessControl, Pausable, ReentrancyGuard ,FinancType{
     using SafeERC20 for IERC20;
     bool public saleIsActive;
     IERC20 public usdt;
@@ -45,19 +46,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     }
 
     ActionChoices public schedule;
-    struct AddrType {
-        address builderAddr; //Build people
-        address buildInsuranceAddr; //Build an insurance address
-        address insuranceAddr; //Insurance providers
-        address operationsAddr; //Operations provider
-        address spvAddr; //SPV address
-        address electrStakeAddr; //Electricity pledge address
-        address electrAddr; //Power Man
-    }
 
-    AddrType public addrType;
     mapping(address => bool) public paidUser; //Paid-up users
-    LimitTimeType public limitTimeType;
+    
     address public platformAddr; //Platform management address
     address public platformFeeAddr; //Platform payment address
     address public founderAddr; //founder
@@ -72,45 +63,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
     uint256 public operationStartTime; //The last O&M settlement time
     uint256 public insuranceStartTime; //Time of settlement of the insurance sub-insurance
     uint256 public spvStartTime; // Time of settlement of the insurance sub-insurance
-
-    struct FeeType {
-        uint256 firstBuildFee; //First build model
-        uint256 remainBuildFee; //Remaining construction money
-        uint256 operationsFee; //Shipping costs
-        uint256 electrFee; //Electricity
-        uint256 electrStakeFee; //Stake electricity charges
-        uint256 buildInsuranceFee; //Construction insurance premium
-        uint256 insuranceFee; //Warranty fee
-        uint256 spvFee; //Trust management fees
-        uint256 publicSalePlatformFee; //Public sale platform fee
-        uint256 remainPlatformFee; // Public sale platform fee
-    }
-    FeeType public feeType;
-
-    struct LimitTimeType {
-        uint256 whitelistPaymentLimitTime; //The whitelist is time-limited
-        uint256 publicSaleLimitTime; //Limited time for public sale
-        uint256 startBuildLimitTime; // Start of construction time
-        uint256 bargainLimitTime; //Pick up the start time
-        uint256 remainPaymentLimitTime; //Whitelist start time
-        uint256 electrIntervalTime; //Power interval
-        uint256 operationIntervalTime; //Time between operations
-        uint256 insuranceIntervalTime; //Insurance sub-settlement time
-        uint256 spvIntervalTime; //Trust interval
-    }
-
-    struct ShareType {
-        uint256 totalShare; //Total number of shares
-        uint256 financingShare; //Financing Unit
-        uint256 founderShare; //Number of founder's shares
-        uint256 platformShare; //Number of shares of the platform
-        uint256 sharePrice; //Shares
-        uint256 stakeSharePrice; //Stake share price
-        uint256 firstSharePrice; //First share price
-        uint256 remainSharePrice; //Backpayment of share price
-    }
-
-    ShareType public shareType;
+    uint256 public trustStartTime;// Time of settlement of the trust Manger start time
 
     uint256 public dividendsExpire;
     uint256 public reserveFund;
@@ -258,6 +211,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
                 dividendsExpire,
                 operationStartTime,
                 spvStartTime,
+                trustStartTime,
                 electrStartTime,
                 insuranceStartTime,
                 feeType,
@@ -670,6 +624,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard {
         require(schedule == ActionChoices.FINISH, "not FINISH status");
         require(dividends == address(0), "contract had deployed!");
         spvStartTime = block.timestamp;
+        trustStartTime = block.timestamp;
         insuranceStartTime = block.timestamp;
         dividends = deployDividends();
         usdt.safeTransfer(dividends, usdt.balanceOf(address(this)));

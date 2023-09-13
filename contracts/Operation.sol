@@ -5,8 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./FinancType.sol";
 
-contract Operation is AccessControl, ReentrancyGuard {
+
+contract Operation is AccessControl, ReentrancyGuard,FinancType {
     using SafeERC20 for IERC20;
     IERC20 public USDT;
     IERC721 public NFT;
@@ -42,51 +44,11 @@ contract Operation is AccessControl, ReentrancyGuard {
     //start time
     uint256 operationStartTime;
     uint256 public spvStartTime;
+    uint256 public trustStartTime;
     uint256 electrStartTime;
     uint256 insuranceStartTime;
     uint256 buildInsuranceStartTime;
 
-    // AddrType
-    struct AddrType {
-        address builderAddr; //builder
-        address buildInsuranceAddr; //build insurance address
-        address insuranceAddr; //insurance provider
-        address operationsAddr; //operation and maintenance provider
-        address spvAddr; //SPV address
-        address electrStakeAddr; //Electricity pledge address
-        address electrAddr; //electric man
-    }
-
-    AddrType public addrType;
-
-    // FeeType
-    struct FeeType {
-        uint256 firstBuildFee; //first build
-        uint256 remainBuildFee; //Remaining construction funds
-        uint256 operationsFee; //shipping fee
-        uint256 electrFee; //electricity bill
-        uint256 electrStakeFee; //Pledge electricity fee
-        uint256 buildInsuranceFee; //build premium
-        uint256 insuranceFee; //warranty fee
-        uint256 spvFee; //trust management fee
-        uint256 publicSalePlatformFee; //public sale platform fee
-        uint256 remainPlatformFee; //public sale platform fee
-    }
-    FeeType public feeType;
-
-    //time limit interval Interval
-    struct LimitTimeType {
-        uint256 whitelistPaymentLimitTime; //Whitelist time limit
-        uint256 publicSaleLimitTime; //public sale for a limited time
-        uint256 startBuildLimitTime; // Start of construction time
-        uint256 bargainLimitTime; //Pick up the start time
-        uint256 remainPaymentLimitTime; //Whitelist start time
-        uint256 electrIntervalTime; //Power interval
-        uint256 operationIntervalTime; //Time between operations
-        uint256 insuranceIntervalTime; //Insurance sub-settlement time
-        uint256 spvIntervalTime; //Trust interval
-    }
-    LimitTimeType public limitTimeType;
     uint256 public reserveFund;
 
     constructor(
@@ -97,6 +59,7 @@ contract Operation is AccessControl, ReentrancyGuard {
         uint256 expire_,
         uint256 operationStartTime_,
         uint256 spvStartTime_,
+        uint256 trustStartTime_,
         uint256 electrStartTime_,
         uint256 insuranceStartTime_,
         FeeType memory feeList_, // fees
@@ -116,6 +79,8 @@ contract Operation is AccessControl, ReentrancyGuard {
         electrStartTime = electrStartTime_;
         insuranceStartTime = insuranceStartTime_;
 
+        trustStartTime = trustStartTime_;
+
         addrType = addrList_;
         limitTimeType = limitTimeList_;
         feeType = feeList_;
@@ -133,6 +98,14 @@ contract Operation is AccessControl, ReentrancyGuard {
         uint256 year,
         uint256 time_
     );
+
+    event trustReceiveLog(
+        address addr_,
+        uint256 amount_,
+        uint256 year,
+        uint256 time_
+    );
+
     event electrStakeLog(address feeAddr, uint256 amount, uint256 time_);
 
     event energyReceiveLog(
@@ -274,6 +247,27 @@ contract Operation is AccessControl, ReentrancyGuard {
         USDT.safeTransfer(addrType.spvAddr, amount);
 
         emit spvReceiveLog(addrType.spvAddr, amount, year, block.timestamp);
+    }
+
+    //trust management
+    function trustManagementReceive() public nonReentrant {
+        require(
+            _msgSender() == addrType.trustAddr,
+            "user does not have permission"
+        );
+        require(trustStartTime > 0, "trust start time must be greater than 0");
+        require(
+            trustStartTime + limitTimeType.trustIntervalTime < block.timestamp,
+            "Refusal to contract transactions"
+        );
+        uint256 year = (block.timestamp - trustStartTime) /
+            limitTimeType.trustIntervalTime;
+
+        uint256 amount = year * feeType.trustFee;
+        spvStartTime += year * limitTimeType.trustIntervalTime;
+        USDT.safeTransfer(addrType.trustAddr, amount);
+
+        emit trustReceiveLog(addrType.trustAddr, amount, year, block.timestamp);
     }
 
     bool electrStakeLock;

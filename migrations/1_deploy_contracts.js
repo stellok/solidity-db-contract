@@ -11,27 +11,21 @@ const axios = require('axios');
 
 module.exports = async function (deployer, network, accounts) {
 
+    if (process.env.nftSwap) {
+        return
+    }
     const deplorerUser = accounts[0]
 
     const usdtOnly = process.env.USDTOnly
 
     let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
-    if (network === 'development' || network === 'mumbai' || network === 'myR' || usdtOnly) {
-        //deployment usdt
-        const init = new BN(10).pow(new BN(6)).mul(new BN('10000000000'))
-        await deployer.deploy(USDT, init, { from: deplorerUser });
-        //access information about your deployed contract instance
-        const usdtContract = await USDT.deployed();
-        console.log(`USDT contract : ${usdtContract.address}`)
-        const usdtBalance = await usdtContract.balanceOf(accounts[0]);
-        console.log(`owner : ${accounts[0]}`)
-        console.log(`Owner USDT Balance: ${await tools.USDTFromWei(usdtContract, usdtBalance)}`)
-        usdt = usdtContract.address
-    }
 
     if (usdtOnly) {
         console.log(`only deployed usdt`)
         return
+    } else {
+        const usdtContract = await USDT.deployed();
+        usdt = usdtContract.address
     }
 
     await deployer.deploy(NFTImpl, 'DB-a', 'DB-a', { from: deplorerUser })
@@ -41,7 +35,6 @@ module.exports = async function (deployer, network, accounts) {
     }
 
     const usdtc = await USDT.at(usdt)
-
 
     //deploy bidding
     await deployer.deploy(Bidding,
@@ -121,6 +114,7 @@ module.exports = async function (deployer, network, accounts) {
     const spvAddr = accounts[2]; // SPV地址
     const electrStakeAddr = accounts[2]; // 电力质押地址
     const electrAddr = accounts[2]; // 电力人
+    const trustAddr = accounts[5]; // 电力人
 
 
 
@@ -135,6 +129,7 @@ module.exports = async function (deployer, network, accounts) {
     const spvFee = await tools.USDTToWei(usdtc, '9')
     const publicSalePlatformFee = await tools.USDTToWei(usdtc, '2')
     const remainPlatformFee = await tools.USDTToWei(usdtc, '33')
+    const trustFee = await tools.USDTToWei(usdtc, '23')
 
 
 
@@ -158,6 +153,7 @@ module.exports = async function (deployer, network, accounts) {
     const operationIntervalTime = 8; // 运维间隔时间
     const insuranceIntervalTime = 9; // 保险次结算时间
     const spvIntervalTime = 10; // 信托间隔时间
+    const trustIntervalTime = 10;
 
     //deploy Financing
     const tx = await deployer.deploy(Financing,
@@ -165,9 +161,9 @@ module.exports = async function (deployer, network, accounts) {
         bidContract.address,                                                                                                                                                                                    // address bidding_
         accounts[0],                                                                                                                                                                                            // address platformFeeAddr_
         accounts[0],                                                                                                                                                                                            // address founderAddr_
-        [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee],                                           // []feeList_10
-        [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr],                                                                                                 // []addrList_7
-        [whitelistPaymentLimitTime, publicSaleLimitTime, startBuildLimitTime, bargainLimitTime, remainPaymentLimitTime, electrIntervalTime, operationIntervalTime, insuranceIntervalTime, spvIntervalTime],     // []limitTimeList_9
+        [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee, trustFee],                                           // []feeList_10
+        [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr, trustAddr],                                                                                                 // []addrList_7
+        [whitelistPaymentLimitTime, publicSaleLimitTime, startBuildLimitTime, bargainLimitTime, remainPaymentLimitTime, electrIntervalTime, operationIntervalTime, insuranceIntervalTime, spvIntervalTime, trustIntervalTime],     // []limitTimeList_9
         [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                                                              // []shareList_8
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
