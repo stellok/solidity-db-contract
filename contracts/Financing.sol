@@ -627,9 +627,13 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         trustStartTime = block.timestamp;
         insuranceStartTime = block.timestamp;
         dividends = deployDividends();
-        uint256 amout = usdt.balanceOf(address(this)) -
-            feeType.remainBuildFee -
-            feeType.publicSalePlatformFee;
-        usdt.safeTransfer(dividends, amout);
+        if (isClaimRemainBuild) {
+            usdt.safeTransfer(dividends, usdt.balanceOf(address(this)));
+        } else {
+            uint256 amout = usdt.balanceOf(address(this)) -
+                feeType.remainBuildFee -
+                feeType.publicSalePlatformFee;
+            usdt.safeTransfer(dividends, amout);
+        }
     }
 }

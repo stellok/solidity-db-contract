@@ -159,9 +159,6 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
     }
 
     function _checkDividend(uint256 amount) internal view {
-        if (USDT.balanceOf(address(this)) < dividendTotal) {
-            revert("Insufficient balance to pay");
-        }
         if ((USDT.balanceOf(address(this)) - dividendTotal) < amount) {
             revert("Insufficient balance to pay");
         }
