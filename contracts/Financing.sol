@@ -19,7 +19,7 @@ interface IBidding {
 }
 
 //Equity financing
-contract Financing is AccessControl, Pausable, ReentrancyGuard ,FinancType{
+contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     using SafeERC20 for IERC20;
     bool public saleIsActive;
     IERC20 public usdt;
@@ -48,7 +48,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard ,FinancType{
     ActionChoices public schedule;
 
     mapping(address => bool) public paidUser; //Paid-up users
-    
+
     address public platformAddr; //Platform management address
     address public platformFeeAddr; //Platform payment address
     address public founderAddr; //founder
@@ -63,7 +63,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard ,FinancType{
     uint256 public operationStartTime; //The last O&M settlement time
     uint256 public insuranceStartTime; //Time of settlement of the insurance sub-insurance
     uint256 public spvStartTime; // Time of settlement of the insurance sub-insurance
-    uint256 public trustStartTime;// Time of settlement of the trust Manger start time
+    uint256 public trustStartTime; // Time of settlement of the trust Manger start time
 
     uint256 public dividendsExpire;
     uint256 public reserveFund;
@@ -627,6 +627,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard ,FinancType{
         trustStartTime = block.timestamp;
         insuranceStartTime = block.timestamp;
         dividends = deployDividends();
-        usdt.safeTransfer(dividends, usdt.balanceOf(address(this)));
+        uint256 amout = usdt.balanceOf(address(this)) -
+            feeType.remainBuildFee -
+            feeType.publicSalePlatformFee;
+        usdt.safeTransfer(dividends, amout);
     }
 }

@@ -7,8 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./FinancType.sol";
 
-
-contract Operation is AccessControl, ReentrancyGuard,FinancType {
+contract Operation is AccessControl, ReentrancyGuard, FinancType {
     using SafeERC20 for IERC20;
     IERC20 public USDT;
     IERC721 public NFT;
@@ -126,6 +125,7 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
         uint256 amount_,
         uint256 time_
     );
+    uint256 dividendTotal;
 
     //pay
     function income(uint256 amount) public nonReentrant {
@@ -133,6 +133,7 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
         USDT.safeTransferFrom(msg.sender, address(this), amount);
         uint256 index = phaseIndex();
         monthlyInfo[index] += amount;
+        dividendTotal += amount;
         emit paymentLog(index, amount, block.timestamp);
     }
 
@@ -143,6 +144,9 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
         require(receiveRecord[index].exist == false, "has been comforted");
         require(monthlyInfo[index] - reserveFund > 0, "Not available");
         uint256 total = monthlyInfo[index] - reserveFund;
+        if (dividendTotal > reserveFund) {
+            dividendTotal -= reserveFund;
+        }
         receiveRecord[index].exist = true;
         receiveRecord[index].totalMonthlyBalance = total;
         receiveRecord[index].dividend = total / totalShares;
@@ -152,6 +156,15 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
             total / totalShares,
             block.timestamp
         );
+    }
+
+    function _checkDividend(uint256 amount) internal view {
+        if (USDT.balanceOf(address(this)) < dividendTotal) {
+            revert("Insufficient balance to pay");
+        }
+        if ((USDT.balanceOf(address(this)) - dividendTotal) < amount) {
+            revert("Insufficient balance to pay");
+        }
     }
 
     //Receive dividends
@@ -184,10 +197,12 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
             receiveRecord[index].totalMonthlyBalance -= receiveRecord[index]
                 .dividend;
         }
-        USDT.safeTransfer(
-            msg.sender,
-            tokenList.length * receiveRecord[index].dividend
-        );
+
+        uint256 toPay = tokenList.length * receiveRecord[index].dividend;
+
+        dividendTotal -= toPay;
+
+        USDT.safeTransfer(msg.sender, toPay);
         emit receiveDividendsLog(
             msg.sender,
             index,
@@ -219,6 +234,9 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
 
         uint256 amount = months * feeType.operationsFee;
         operationStartTime += months * limitTimeType.operationIntervalTime;
+
+        _checkDividend(amount);
+
         USDT.safeTransfer(addrType.operationsAddr, amount);
         emit operationsReceiveLog(
             months,
@@ -244,6 +262,9 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
 
         uint256 amount = year * feeType.spvFee;
         spvStartTime += year * limitTimeType.spvIntervalTime;
+
+        _checkDividend(amount);
+
         USDT.safeTransfer(addrType.spvAddr, amount);
 
         emit spvReceiveLog(addrType.spvAddr, amount, year, block.timestamp);
@@ -265,6 +286,9 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
 
         uint256 amount = year * feeType.trustFee;
         spvStartTime += year * limitTimeType.trustIntervalTime;
+
+        _checkDividend(amount);
+
         USDT.safeTransfer(addrType.trustAddr, amount);
 
         emit trustReceiveLog(addrType.trustAddr, amount, year, block.timestamp);
@@ -281,6 +305,7 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
         require(electrStakeLock == false, "You have claimed it");
         //To determine the first claim requires pledge electricity TODO time calculation formula
         electrStakeLock = true;
+
         USDT.safeTransfer(addrType.electrStakeAddr, feeType.electrStakeFee);
         emit electrStakeLog(
             addrType.electrStakeAddr,
@@ -309,6 +334,8 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
             limitTimeType.electrIntervalTime;
         uint256 amount = months * feeType.electrFee;
         electrStartTime += months * limitTimeType.electrIntervalTime;
+
+        _checkDividend(amount);
         //Judge the first deposit
         USDT.safeTransfer(addrType.electrAddr, amount);
         emit energyReceiveLog(
@@ -338,6 +365,9 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
             limitTimeType.insuranceIntervalTime;
         uint256 amount = year * feeType.insuranceFee;
         insuranceStartTime += year * limitTimeType.insuranceIntervalTime;
+
+        _checkDividend(amount);
+
         USDT.safeTransfer(addrType.insuranceAddr, amount);
 
         emit insuranceReceiveLog(
@@ -358,7 +388,7 @@ contract Operation is AccessControl, ReentrancyGuard,FinancType {
         return (block.timestamp - lastExecuted) / expire;
     }
 
-    function mouthTotal(uint256 index) public view returns (uint256) {
+    function monthTotal(uint256 index) public view returns (uint256) {
         return monthlyInfo[index];
     }
 
