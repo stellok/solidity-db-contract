@@ -576,6 +576,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         const addrType = await financing.addrType()
         const feeType = await financing.feeType()
 
+        console.log(`trustAddr = ${addrType.trustAddr}`)
         //addrType.insuranceAddr
         const origbuilderAddrBalance = await tools.balanceOF(usdt.address, addrType.trustAddr)
         const electrStake = await dividends.trustManagementReceive({ from: trustAddr })

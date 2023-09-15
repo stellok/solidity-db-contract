@@ -43,7 +43,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bool unStake;
         bool hadStaked;
         uint256 stakeAmount;
-        bool exist;
+        bool exist; // Whether a deposit has been paid
     }
 
     //Company staking
@@ -231,6 +231,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         usdt.safeTransferFrom(_msgSender(), address(this), amount);
         miner[_msgSender()][id].amount += amount;
         miner[_msgSender()][id].exist = true;
+        stakeMiner[_msgSender()].exist = true;
         emit minerIntentMoneyLog(_msgSender(), amount, block.timestamp, id);
     }
 
@@ -358,8 +359,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         bytes memory signature
     ) public nonReentrant whenNotPaused {
         require(expire > block.timestamp, "not yet expired");
-        require(stakeMiner[_msgSender()].exist == true, "participated");
-        require(stakeMiner[_msgSender()].hadStaked == false, "participated"); //Participated
+        require(stakeMiner[_msgSender()].exist == true, "No intention payment");
+        require(stakeMiner[_msgSender()].hadStaked == false, "Already staked"); //Participated
         bytes32 msgSplice = keccak256(
             abi.encodePacked(
                 address(this),
@@ -385,7 +386,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 nonce,
         bytes memory signature
     ) public nonReentrant {
-        require(stakeMiner[_msgSender()].exist == true, "miner  does not exist"); //
+        require(
+            stakeMiner[_msgSender()].exist == true,
+            "miner  does not exist"
+        ); //
         require(stakeMiner[_msgSender()].nonce == nonce, "nonce invalid"); //
         require(
             stakeMiner[_msgSender()].stakeAmount >= amount && amount > 0,
@@ -481,7 +485,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //todo returns staking minerStake
-    function IntentMoneyAmount(address account,uint256 id) public view returns (uint256) {
+    function IntentMoneyAmount(
+        address account,
+        uint256 id
+    ) public view returns (uint256) {
         return miner[account][id].amount;
     }
 
@@ -528,7 +535,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         usdt.safeTransfer(addr, amount);
     }
 
-    function isParticipated(address account,uint256 id) public view returns (bool) {
+    function isParticipated(
+        address account,
+        uint256 id
+    ) public view returns (bool) {
         return miner[account][id].exist;
     }
 }

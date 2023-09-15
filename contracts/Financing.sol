@@ -359,8 +359,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         publicSaleTotalSold += amount_;
         uint256 mAmount = amount_ *
             (shareType.firstSharePrice - shareType.stakeSharePrice);
-        uint256 gAmout = amount_ * shareType.stakeSharePrice;
-        bidding.transferAmount(gAmout);
+
         usdt.safeTransferFrom(
             _msgSender(),
             address(this),
@@ -517,10 +516,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
                 schedule = ActionChoices.Bargain;
                 receiptNFT.pause();
                 emit startBargainLog(
-                    issuedTotalShare - shareType.financingShare,
+                    shareType.financingShare - issuedTotalShare,
                     block.timestamp
                 );
-        
             }
         }
     }

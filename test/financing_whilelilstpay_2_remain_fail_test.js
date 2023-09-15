@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const BN = require('bn.js');
 const BiddingTest = artifacts.require("Bidding");
 const USDTTest = artifacts.require("Usdt");
 const Financing = artifacts.require("Financing");
@@ -27,7 +28,7 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
 
-        await tools.transferUSDT(usdt, accounts[0], user, '1000000')
+        await tools.transferUSDT(usdt, accounts[0], user, '900000')
 
         //startSubscribe 
         // uint256 financingShare_,
@@ -36,7 +37,7 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
         // uint256 subscribeLimitTime_
         const financingShare_ = await tools.USDTToWei(usdt, '1000')
         const stakeSharePrice_ = await tools.USDTToWei(usdt, '7')
-        let subBegin = await bid.startSubscribe(financingShare_, stakeSharePrice_, 1689581119, 1689753919);
+        let subBegin = await bid.startSubscribe(financingShare_, stakeSharePrice_, 1694161282, 1695267313);
         assert.equal(subBegin.receipt.status, true, "startSubscribe failed !");
     });
 
@@ -126,6 +127,7 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
 
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
+        const bid = await BiddingTest.deployed();
 
         const amount_ = 10
         const share = await financing.shareType()
@@ -138,6 +140,8 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
 
         const publicSaleTotalSold = await financing.publicSaleTotalSold()
         console.log(`publicSaleTotalSold ${publicSaleTotalSold}`)
+
+        await tools.printUSDT(usdt, bid.address)
 
         const pub = await financing.publicSale(amount_, { from: user })
         assert.equal(pub.receipt.status, true, "publicSale failed !");
@@ -170,7 +174,7 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
         const platformFeeAddr = await financing.platformFeeAddr()
         const platformFeeAddrBalanceOf = await tools.balanceOF(usdt.address, platformFeeAddr)
 
-        const tx = await financing.claimFirstBuildFee({ from: accounts[2] });
+        const tx = await financing.claimFirstBuildFee({ from: accounts[0] });
         assert.equal(tx.receipt.status, true, "claimFirstBuildFee failed !");
 
         const addrType = await financing.addrType()
@@ -237,11 +241,19 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
 
     })
 
-    //checkRemainPayment
-    it("testing checkRemainPayment() should assert true", async function () {
+    const checkRemainPayment = async function (diff) {
         const financing = await Financing.deployed()
         const shareType = await financing.shareType()
 
+
+        //remainPaymentTime + limitTimeType.remainPaymentLimitTime
+        const remainPaymentTime = await financing.remainPaymentTime()
+        const limitTimeType = await financing.limitTimeType()
+        console.log(`time ${new BN(remainPaymentTime).add(limitTimeType.remainPaymentLimitTime)}`)
+
+       
+        await tools.timeout(1000 * (new BN(limitTimeType.remainPaymentLimitTime).add(new BN(diff))).toNumber())
+       
         const tx = await financing.checkRemainPayment()
         assert.equal(tx.receipt.status, true, "checkRemainPayment failed !");
 
@@ -249,12 +261,26 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
         const issuedTotalShare = await financing.issuedTotalShare()
         console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
 
-        const schedule = await financing.schedule()
-        expect(schedule.toNumber()).to.equal(ActionChoices.Bargain)
 
+
+    }
+
+    it("testing checkRemainPayment-remainPayment should assert true", async function () {
+        const financing = await Financing.deployed()
+        await checkRemainPayment(-20)
+        const schedule = await financing.schedule()
+        expect(schedule.toNumber()).to.equal(ActionChoices.remainPayment)
     })
 
-    //remainBargain
+    //checkRemainPayment
+    it("testing checkRemainPayment-Bargain should assert true", async function () {
+        const financing = await Financing.deployed()
+        await checkRemainPayment(10)
+        const schedule = await financing.schedule()
+        expect(schedule.toNumber()).to.equal(ActionChoices.Bargain)
+    })
+
+    remainBargain
     it("testing remainBargain() should assert true", async function () {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();
