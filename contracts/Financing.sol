@@ -508,6 +508,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             (remainPaymentTime + limitTimeType.remainPaymentLimitTime) >
             block.timestamp
         ) {
+            if (issuedTotalShare >= shareType.financingShare) {
+                _whetherFinish();
+            }
+        } else {
             if (issuedTotalShare < shareType.financingShare) {
                 bargainTime = block.timestamp;
                 schedule = ActionChoices.Bargain;
@@ -516,12 +520,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
                     issuedTotalShare - shareType.financingShare,
                     block.timestamp
                 );
-            } else {
-                _whetherFinish();
+        
             }
-        } else {
-            schedule = ActionChoices.FAILED;
-            emit whetherFinishLog(false, block.timestamp);
         }
     }
 
