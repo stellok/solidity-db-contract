@@ -334,7 +334,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     function unSubscribe(
         uint256 expire,
         bytes memory signature
-    ) public nonReentrant {
+    ) public whenNotPaused nonReentrant {
         require(user[_msgSender()].exist == true, "company  does not exist"); //The user does not exist
         require(user[_msgSender()].unStake == false, "company  does not exist"); //
 

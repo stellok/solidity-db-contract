@@ -47,7 +47,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     ActionChoices public schedule;
 
-    mapping(address => bool) public paidUser; //Paid-up users
+    mapping(address => bool)  paidUser; //Paid-up users
 
     address public platformAddr; //Platform management address
     address public platformFeeAddr; //Platform payment address
@@ -55,7 +55,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     uint256 public issuedTotalShare; //Total number of shares issued
     uint256 public publicSaleTotalSold; //Total number of the first stage
     uint256 public whitelistPaymentTime; //Whitelist start time
-    uint256 publicSaleTime; //Public sale start time
+    uint256 public publicSaleTime; //Public sale start time
     uint256 startBuildTime; //Start of construction time
     uint256 bargainTime; //Pick up the start time
     uint256 public remainPaymentTime; //Whitelist start time
@@ -332,8 +332,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         return mAmount;
     }
 
+    //TODO 
     function publicSale(uint256 amount_) public nonReentrant {
-        require(schedule == ActionChoices.publicSale, "not PAID status");
+        require(schedule == ActionChoices.publicSale, "not publicSale status");
         require(
             amount_ <= maxNftAMOUNT && amount_ > 0,
             "amount Limit Exceeded"
@@ -357,6 +358,12 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             amount_ = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount_;
+
+        
+        // uint256 gAmout = amount_ * shareType.stakeSharePrice;
+        // bidding.transferAmount(gAmout);
+
+
         uint256 mAmount = amount_ *
             (shareType.firstSharePrice - shareType.stakeSharePrice);
 
@@ -365,6 +372,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             address(this),
             mAmount //
         );
+
         emit publicSaleLog(_msgSender(), amount_, mAmount, block.timestamp);
         // 铸造nft
         receiptNFT.mint(_msgSender(), amount_);
@@ -373,7 +381,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     //Check the public sale
     function checkPublicSale() public nonReentrant {
-        require(schedule == ActionChoices.publicSale, "not PAID status");
+        require(schedule == ActionChoices.publicSale, "not publicSale status");
         require(
             publicSaleTime + limitTimeType.publicSaleLimitTime <
                 block.timestamp,
@@ -395,21 +403,15 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
         );
+        //TODO test
         require(tokenIdList.length <= maxNftAMOUNT, "tokenIdList lenght >= 10");
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
                 "Insufficient balance"
             );
-
             issuedTotalShare -= 1;
             receiptNFT.burn(tokenIdList[i]);
-            usdt.safeTransferFrom(
-                _msgSender(),
-                address(this),
-                shareType.remainSharePrice
-            );
-
             emit redeemPublicSaleLog(tokenIdList[i], shareType.firstSharePrice);
         }
         usdt.safeTransfer(
@@ -591,14 +593,14 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             );
             //Check your balance
             receiptNFT.burn(tokenIdList[i]);
-
+            
             //Hit the money
             emit redeemRemainPaymentLog(
                 tokenIdList[i],
                 shareType.remainSharePrice
             );
         }
-        usdt.safeTransfer(_msgSender(), shareType.remainSharePrice);
+        usdt.safeTransfer(_msgSender(), shareType.remainSharePrice* tokenIdList.length);
     }
 
     //Receive the remaining payment

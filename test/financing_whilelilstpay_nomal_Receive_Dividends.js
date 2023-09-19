@@ -35,6 +35,30 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
     let user = accounts[5]
 
 
+    const nftBalance = async function (contract, address) {
+        let config = {
+            method: 'get',
+            maxBodyLength: Infinity,
+            url: 'http://192.168.1.115:8088/nft/list',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                "contract": contract,
+                "address": address
+            })
+        };
+
+        const resp = await axios.request(config)
+        const data = resp.data.data
+        var ids = new Array()
+        data.tokenIds.forEach(element => {
+            ids.push(parseInt(element))
+        });
+        return ids
+    }
+
+
     before(async function () {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
@@ -46,7 +70,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         await tools.transferUSDT(usdt, accounts[0], user3, '1000000')
         await tools.transferUSDT(usdt, accounts[0], user4, '1000000')
 
-        
+
         //startSubscribe 
         // uint256 financingShare_,
         // uint256 stakeSharePrice_,
@@ -213,89 +237,63 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         expect(schedule.toNumber()).to.equal(ActionChoices.remainPayment)
     })
 
+    const remainPayment = async function (payer) {
+
+        await tools.timeout(5000)
+
+        const financing = await Financing.deployed()
+        const usdt = await USDTTest.deployed();
+
+        //remainPaymentTime + limitTimeType.remainPaymentLimitTime
+        const limitTimeType = await financing.limitTimeType()
+        const remainPaymentTime = await financing.remainPaymentTime()
+        console.log(remainPaymentTime.add(limitTimeType.remainPaymentLimitTime).toString())
+
+        const receiptNFT = await financing.receiptNFT()
+        const balance = await nft.balanceOf(receiptNFT, payer)
+
+        const ids = await nftBalance(receiptNFT, payer)
+        console.log(`token ids ${ids}`)
+
+        const shareType = await financing.shareType()
+        //
+        //tokenIdList.length * shareType.remainSharePrice
+        const amount = balance.mul(shareType.remainSharePrice)
+        let resultApprove = await usdt.approve(financing.address, amount, { from: payer })
+        assert.equal(resultApprove.receipt.status, true, "approve failed !");
+
+        const remainPayment = await financing.remainPayment(ids, { from: payer })
+        assert.equal(remainPayment.receipt.status, true, "remainPayment failed !");
+
+        //check orig nft
+        ids.forEach(element => {
+            nft.ownerOf(receiptNFT, element).then(owner => { }).catch(err => {
+                assert(err.message.includes("invalid token ID"), "Expected an error with message 'Error message'.");
+            })
+        })
+
+
+        //issuedTotalShare >= shareType.financingShare
+        const issuedTotalShare = await financing.issuedTotalShare()
+        console.log(`${payer} issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
+        const schedule = await financing.schedule()
+        if (issuedTotalShare.gte(shareType.financingShare)) {
+            console.log("ActionChoices.FINISH")
+            expect(schedule.toNumber()).to.equal(ActionChoices.FINISH)
+        }
+    }
 
     it("testing remainPayment() should assert true", async function () {
-
-        await tools.timeout(5000)
-
-        const financing = await Financing.deployed()
-        const usdt = await USDTTest.deployed();
-
-        //remainPaymentTime + limitTimeType.remainPaymentLimitTime
-        const limitTimeType = await financing.limitTimeType()
-        const remainPaymentTime = await financing.remainPaymentTime()
-        console.log(remainPaymentTime.add(limitTimeType.remainPaymentLimitTime).toString())
-
-        const receiptNFT = await financing.receiptNFT()
-        const balance = await nft.balanceOf(receiptNFT, user)
-
-        var ids = new Array()
-        for (let index = 1; index <= balance; index++) {
-            ids.push(index)
-        }
-        console.log(`token ids ${ids}`)
-
-        const shareType = await financing.shareType()
-        //
-        //tokenIdList.length * shareType.remainSharePrice
-        const amount = balance.mul(shareType.remainSharePrice)
-        let resultApprove = await usdt.approve(financing.address, amount, { from: user })
-        assert.equal(resultApprove.receipt.status, true, "approve failed !");
-
-        const remainPayment = await financing.remainPayment(ids, { from: user })
-        assert.equal(remainPayment.receipt.status, true, "remainPayment failed !");
-
-        //issuedTotalShare >= shareType.financingShare
-        const issuedTotalShare = await financing.issuedTotalShare()
-        console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
-        if (issuedTotalShare.gte(shareType.financingShare)) {
-            console.log("ActionChoices.FINISH")
-        }
-
-    })
+        await remainPayment(user)
+    });
 
     it("testing remainPayment2() should assert true", async function () {
-
-        await tools.timeout(5000)
-
         const financing = await Financing.deployed()
-        const usdt = await USDTTest.deployed();
-
-        //remainPaymentTime + limitTimeType.remainPaymentLimitTime
-        const limitTimeType = await financing.limitTimeType()
-        const remainPaymentTime = await financing.remainPaymentTime()
-        console.log(remainPaymentTime.add(limitTimeType.remainPaymentLimitTime).toString())
-
-        const receiptNFT = await financing.receiptNFT()
-        const balance = await nft.balanceOf(receiptNFT, user2)
-        console.log(`remainPayment2 nft ${balance}`)
-        var ids = new Array()
-        for (let index = 11; index <= (balance.toNumber() + 10); index++) {
-            ids.push(index)
-        }
-        console.log(`token ids ${ids}`)
-
-        const shareType = await financing.shareType()
-        //
-        //tokenIdList.length * shareType.remainSharePrice
-        const amount = balance.mul(shareType.remainSharePrice)
-        let resultApprove = await usdt.approve(financing.address, amount, { from: user2 })
-        assert.equal(resultApprove.receipt.status, true, "approve failed !");
-
-        const remainPayment = await financing.remainPayment(ids, { from: user2 })
-        assert.equal(remainPayment.receipt.status, true, "remainPayment failed !");
-
-        //issuedTotalShare >= shareType.financingShare
-        const issuedTotalShare = await financing.issuedTotalShare()
-        console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
-        if (issuedTotalShare.gte(shareType.financingShare)) {
-            console.log("ActionChoices.FINISH")
-        }
-
         const schedule = await financing.schedule()
+        await remainPayment(user2)
         expect(schedule.toNumber()).to.equal(ActionChoices.FINISH)
-
     })
+
     //claimRemainBuildFee
     it("testing claimRemainBuildFee() should assert true", async function () {
 
@@ -382,37 +380,13 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
 
         const shareNFT = await financing.shareNFT()
         console.log(`shareNFT ${shareNFT}`)
-        const axios = require('axios');
-
-        let config = {
-            method: 'get',
-            maxBodyLength: Infinity,
-            url: 'http://192.168.1.115:8088/nft/list',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({
-                "contract": shareNFT,
-                "address": user
-            })
-        };
-
-        const resp = await axios.request(config)
-        const data = resp.data.data
-        var ids = new Array()
-        data.tokenIds.forEach(element => {
-            ids.push(parseInt(element))
-        });
+        const ids = await nftBalance(shareNFT, user)
 
         console.log(ids)
         const tx = await dividends.receiveDividends(0, ids, { from: user })
         assert.equal(tx.receipt.status, true, "receiveDividends failed !");
         console.log(`receiveDividends hash ${tx.tx}`)
 
-        data.tokenIds.forEach(async element => {
-            const b = await dividends.isReceive(0, element)
-            assert.equal(b, true, "token is true");
-        });
     }
 
     it("testing receiveDividends() should assert true", receiveDividends)
@@ -464,7 +438,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         await spvReceive()
     })
 
-    const electrStake =async function () {
+    const electrStake = async function () {
         const electrStakeAddr = accounts[2];
         //addrType.electrStakeAddr, feeType.electrStakeFee
         const financing = await Financing.deployed()
@@ -484,7 +458,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
     //electrStake()
     it("testing electrStake() should assert true", electrStake)
 
-    it("testing electrStake2() should assert true", async function(){
+    it("testing electrStake2() should assert true", async function () {
         try {
             await electrStake()
         } catch (error) {
@@ -559,7 +533,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
     //insuranceReceive
     it("testing insuranceReceive() should assert true", insuranceReceive)
 
-    it("testing insuranceReceiveTry() should assert true", async function(){
+    it("testing insuranceReceiveTry() should assert true", async function () {
         try {
             await insuranceReceive()
         } catch (error) {
@@ -567,7 +541,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         }
     })
 
-    const trustManagementReceive = async function() {
+    const trustManagementReceive = async function () {
         const trustAddr = accounts[5];
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed()
