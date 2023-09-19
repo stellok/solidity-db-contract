@@ -260,9 +260,6 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
         //issuedTotalShare >= shareType.financingShare
         const issuedTotalShare = await financing.issuedTotalShare()
         console.log(`issuedTotalShare ${issuedTotalShare} financingShare ${shareType.financingShare}`)
-
-
-
     }
 
     it("testing checkRemainPayment-remainPayment should assert true", async function () {
@@ -280,7 +277,7 @@ contract("FinancingTest-whilepay-2-remain-fail", (accounts) => {
         expect(schedule.toNumber()).to.equal(ActionChoices.Bargain)
     })
 
-    remainBargain
+    //remainBargain
     it("testing remainBargain() should assert true", async function () {
         const financing = await Financing.deployed()
         const usdt = await USDTTest.deployed();

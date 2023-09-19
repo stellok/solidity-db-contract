@@ -34,31 +34,6 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
 
     let user = accounts[5]
 
-
-    const nftBalance = async function (contract, address) {
-        let config = {
-            method: 'get',
-            maxBodyLength: Infinity,
-            url: 'http://192.168.1.115:8088/nft/list',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({
-                "contract": contract,
-                "address": address
-            })
-        };
-
-        const resp = await axios.request(config)
-        const data = resp.data.data
-        var ids = new Array()
-        data.tokenIds.forEach(element => {
-            ids.push(parseInt(element))
-        });
-        return ids
-    }
-
-
     before(async function () {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
@@ -252,7 +227,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
         const receiptNFT = await financing.receiptNFT()
         const balance = await nft.balanceOf(receiptNFT, payer)
 
-        const ids = await nftBalance(receiptNFT, payer)
+        const ids = await nft.nftBalance(receiptNFT, payer)
         console.log(`token ids ${ids}`)
 
         const shareType = await financing.shareType()
@@ -380,7 +355,7 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
 
         const shareNFT = await financing.shareNFT()
         console.log(`shareNFT ${shareNFT}`)
-        const ids = await nftBalance(shareNFT, user)
+        const ids = await nft.nftBalance(shareNFT, user)
 
         console.log(ids)
         const tx = await dividends.receiveDividends(0, ids, { from: user })

@@ -29,7 +29,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     address public dividends;
 
-    uint256 public constant maxNftAMOUNT = 10;
+    uint256 public maxNftAMOUNT = 10;
+
     //Power pledge time
     bool public electrStakeLock;
     bool public isClaimRemainBuild;
@@ -47,7 +48,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     ActionChoices public schedule;
 
-    mapping(address => bool)  paidUser; //Paid-up users
+    mapping(address => bool) paidUser; //Paid-up users
 
     address public platformAddr; //Platform management address
     address public platformFeeAddr; //Platform payment address
@@ -332,7 +333,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         return mAmount;
     }
 
-    //TODO 
+    //TODO
     function publicSale(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not publicSale status");
         require(
@@ -358,11 +359,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             amount_ = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount_;
+    
 
-        
         // uint256 gAmout = amount_ * shareType.stakeSharePrice;
         // bidding.transferAmount(gAmout);
-
 
         uint256 mAmount = amount_ *
             (shareType.firstSharePrice - shareType.stakeSharePrice);
@@ -403,14 +403,14 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
         );
-        //TODO test
+    
         require(tokenIdList.length <= maxNftAMOUNT, "tokenIdList lenght >= 10");
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
-                "Insufficient balance"
+                "Insufficient Owner"
             );
-            issuedTotalShare -= 1;
+            publicSaleTotalSold -= 1;
             receiptNFT.burn(tokenIdList[i]);
             emit redeemPublicSaleLog(tokenIdList[i], shareType.firstSharePrice);
         }
@@ -589,18 +589,21 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
-                "Insufficient balance"
+                "Insufficient owner"
             );
             //Check your balance
             receiptNFT.burn(tokenIdList[i]);
-            
+            issuedTotalShare--;
             //Hit the money
             emit redeemRemainPaymentLog(
                 tokenIdList[i],
                 shareType.remainSharePrice
             );
         }
-        usdt.safeTransfer(_msgSender(), shareType.remainSharePrice* tokenIdList.length);
+        usdt.safeTransfer(
+            _msgSender(),
+            shareType.remainSharePrice * tokenIdList.length
+        );
     }
 
     //Receive the remaining payment

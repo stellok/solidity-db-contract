@@ -11,7 +11,6 @@ contract("BiddingTest-paydd", (accounts) => {
     before(async function () {
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
-
         //transfer usdt
         console.log(`\n using account ${user} as user ! `)
         const amount = await tools.USDTToWei(usdt, '100000')
@@ -24,49 +23,41 @@ contract("BiddingTest-paydd", (accounts) => {
 
     it("testing payDDFee() should assert true", async function () {
 
-
-
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
-
         //get ddFee
         const ddFee = await bid.ddFee()
-
         let resultApprove = await usdt.approve(bid.address, ddFee)
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
-
         const isddFee = await bid.isfDdFee()
         expect(isddFee).to.equal(false)
-
-
         // console.log(`approve ${JSON.stringify(resultApprove.receipt)}`)
         let result = await bid.payDDFee();
         assert.equal(result.receipt.status, true, "payDDFee failed !");
-
         // console.log(`result ${result.receipt}`)
         let balanceOf = await usdt.balanceOf(bid.address);
         console.log(`balanceOf usdt bid contract ${balanceOf}`)
-
         assert.equal(balanceOf.toString(), ddFee.toString(), "balanceOf must == ddFee");
 
     });
 
-    it("testing refundDDFee() should assert true", async function () {
+    const refundDDFee = async function () {
 
         const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
-
         //get ddFee
         const ddFee = await bid.ddFee()
-
         const isddFee = await bid.isfDdFee()
         expect(isddFee).to.equal(true)
-
         let result = await bid.refundDDFee();
         assert.equal(result.receipt.status, true, "refundDDFee failed !");
-
         await tools.AssertUSDT(usdt.address, bid.address, '0')
+    }
 
+    it("testing refundDDFee() should assert true", refundDDFee);
+
+    it("testing refundDDFee() should assert true", async function () {
+        
     });
 
 })

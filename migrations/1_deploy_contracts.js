@@ -138,17 +138,17 @@ module.exports = async function (deployer, network, accounts) {
     const platformShare = 10
     const totalShare = financingShare + founderShare + platformShare
 
-    const sharePrice = await tools.USDTToWei(usdtc, '24')
-    const stakeSharePrice = await tools.USDTToWei(usdtc, '7')
-    const firstSharePrice = await tools.USDTToWei(usdtc, '8')
-    const remainSharePrice = await tools.USDTToWei(usdtc, '16')
+    const sharePrice = await tools.USDTToWei(usdtc, '100')
+    const stakeSharePrice = await tools.USDTToWei(usdtc, '5')   //5%
+    const firstSharePrice = await tools.USDTToWei(usdtc, '30')   //30%
+    const remainSharePrice = await tools.USDTToWei(usdtc, '70') //70%
 
 
     const whitelistPaymentLimitTime = 1; // 白名单限时
-    const publicSaleLimitTime = 864000; // 公售限时
+    const publicSaleLimitTime = 60; // 公售限时
     const startBuildLimitTime = 4; // 开始建造时间
     const bargainLimitTime = 3600; // 捡漏开始时间
-    const remainPaymentLimitTime = 10000000; // 白名单开始时间
+    const remainPaymentLimitTime = 60; // 白名单开始时间
     const electrIntervalTime = 7; // 电力间隔时间
     const operationIntervalTime = 8; // 运维间隔时间
     const insuranceIntervalTime = 9; // 保险次结算时间
@@ -198,6 +198,7 @@ module.exports = async function (deployer, network, accounts) {
     // uint256 totalShares_
 
     axios.defaults.baseURL = 'http://192.168.1.115:8088';
+    axios.defaults.timeout = 3000;
     await axios.post('/cache/abi', { contract: usdt, abi: JSON.stringify(USDT.abi), include: 'contract' })
     await axios.post('/cache/abi', { contract: bidContract.address, abi: JSON.stringify(bidContract.abi) })
     await axios.post('/cache/abi', { contract: FinancingContract.address, abi: JSON.stringify(FinancingContract.abi) })

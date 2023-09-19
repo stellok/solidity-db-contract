@@ -20,7 +20,7 @@ const ActionChoices = {
 }
 
 
-contract("FinancingTest-whilepay-1-remain-fail", (accounts) => {
+contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
 
     let user = accounts[5]
 
@@ -32,12 +32,15 @@ contract("FinancingTest-whilepay-1-remain-fail", (accounts) => {
 
         await tools.transferUSDT(usdt, accounts[0], user, '900000')
 
+        await tools.transferUSDT(usdt, accounts[0], financing.address, '10')
+
         //startSubscribe 
         // uint256 financingShare_,
         // uint256 stakeSharePrice_,
         // uint256 subscribeTime_,
         // uint256 subscribeLimitTime_
-        let subBegin = await bid.startSubscribe(100, shareType.sharePrice, 1694161282, 1695267313);
+        console.log(`sharePrice ${shareType.stakeSharePrice}`)
+        let subBegin = await bid.startSubscribe(100, shareType.stakeSharePrice, 1694161282, 1695267313);
         assert.equal(subBegin.receipt.status, true, "startSubscribe failed !");
     });
 
@@ -196,12 +199,12 @@ contract("FinancingTest-whilepay-1-remain-fail", (accounts) => {
         const bid = await BiddingTest.deployed();
 
         const usdt = await USDTTest.deployed();
-        const ids = await nft.nftBalance(receiptNFT,user)
+        const ids = await nft.nftBalance(receiptNFT, user)
         console.log(ids)
-        await tools.printUSDT(usdt,financing.address)
-        await tools.printUSDT(usdt,bid.address)
-        const tx = await financing.redeemPublicSale(ids)
+        await tools.printUSDT(usdt, financing.address)
+        await tools.printUSDT(usdt, bid.address)
+        const tx = await financing.redeemPublicSale(ids, { from: user })
         assert.equal(tx.receipt.status, true, "publicSale failed !");
     })
-   
+
 })
