@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract NFTMarket is ERC721Holder, Context {
+contract NFTMarket is ERC721Holder, Ownable {
     using SafeERC20 for IERC20;
     IERC20 public usdt;
 
@@ -36,6 +36,8 @@ contract NFTMarket is ERC721Holder, Context {
         uint256 newPrice
     );
 
+    event SoldOut(address nftAddr, uint256 tokenId);
+
     //Define the order structure
     struct Order {
         address owner;
@@ -44,11 +46,16 @@ contract NFTMarket is ERC721Holder, Context {
     //NFT Order mapping
     mapping(address => mapping(uint256 => Order)) public nftList;
 
-    uint256 public orderFee;
-    address public orderFeeAddr;
+    uint256 public persent;
+    address public feeAddr;
 
-    function setOrderFee(uint256 _orderFee) public {
-        orderFee = _orderFee;
+    function setTransactionFee(uint8 _persent) public onlyOwner {
+        require(_persent <= 100, "persent Must be between 1 and 100");
+        persent = _persent;
+    }
+
+    function setTransactionAddr(address _feeAddr) public onlyOwner {
+        feeAddr = _feeAddr;
     }
 
     constructor(IERC20 _usdt) {
@@ -80,8 +87,10 @@ contract NFTMarket is ERC721Holder, Context {
     function batchPurchase(address _nftAddr, uint256[] memory _tokenId) public {
         IERC721 _nft = IERC721(_nftAddr);
         for (uint i = 0; i < _tokenId.length; i++) {
-            if (_nft.ownerOf(_tokenId[i]) == msg.sender) {
+            if (_nft.ownerOf(_tokenId[i]) == address(this)) {
                 purchase(_nftAddr, _tokenId[i]);
+            } else {
+                emit SoldOut(_nftAddr, _tokenId[i]);
             }
         }
     }
@@ -110,12 +119,13 @@ contract NFTMarket is ERC721Holder, Context {
 
     // Purchase: The buyer buys the NFT, the contract is _nftAddr, the tokenId is _tokenId, and ETH is included when calling the function
     function purchase(address _nftAddr, uint256 _tokenId) public {
+        IERC721 _nft = IERC721(_nftAddr);
+        require(_nft.ownerOf(_tokenId) == address(this), "Invalid Order"); // NFTs are in the contract
+
         Order storage _order = nftList[_nftAddr][_tokenId]; // Get the order
         require(_order.price > 0, "Invalid Price"); // The NFT price is greater than 0
         // require(msg.value >= _order.price, "Increase price"); // The purchase price is greater than the list price
         // Declare the ier c721 interface contract variable
-        IERC721 _nft = IERC721(_nftAddr);
-        require(_nft.ownerOf(_tokenId) == address(this), "Invalid Order"); // NFTs are in the contract
 
         // Transfer the NFT to the buyer
         _nft.safeTransferFrom(address(this), msg.sender, _tokenId);
@@ -126,12 +136,23 @@ contract NFTMarket is ERC721Holder, Context {
 
         // Transfer usdt
         usdt.safeTransferFrom(_msgSender(), address(this), _order.price);
-        usdt.safeTransfer(_order.owner, _order.price);
 
-        delete nftList[_nftAddr][_tokenId]; // Delete Order
+        uint256 price = _order.price;
+
+        //Transfer fee
+        if (feeAddr != address(0) && persent > 0) {
+            uint256 fee = (_order.price * persent) / 100;
+            usdt.safeTransfer(feeAddr, fee);
+            price -= fee;
+        }
+
+        //Transfer to buyer
+        usdt.safeTransfer(_order.owner, price);
 
         // Release the purchase event
         emit Purchase(msg.sender, _nftAddr, _tokenId, _order.price);
+
+        delete nftList[_nftAddr][_tokenId]; // Delete Order
     }
 
     // Cancelled: The seller cancels the pending order
