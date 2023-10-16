@@ -24,7 +24,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     bool public saleIsActive;
     IERC20 public usdt;
     NFT721Impl public receiptNFT; //Equity NFT
-    NFT721Impl public shareNFT; //equityNFT
     IBidding public bidding; //equityNFT
 
     address public dividends;
@@ -33,7 +32,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     //Power pledge time
     bool public electrStakeLock;
-    bool public isClaimRemainBuild;
     enum ActionChoices {
         INIT,
         whitelistPayment, //Whitelist
@@ -63,22 +61,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     uint256 public dividendsExpire;
     uint256 public reserveFund;
 
-    event claimFirstBuildFeeLog(
-        address energyAddr_,
-        uint256 firstFee_,
-        uint256 receiveTime_
-    );
-    event claimRemainBuildFeeLog(
-        address energyAddr_,
-        uint256 firstFee_,
-        uint256 receiveTime_
-    );
-
-    event buildInsuranceReceiveLog(
-        address addr_,
-        uint256 amount_,
-        uint256 time_
-    );
     event operationsReceiveLog(address addr_, uint256 amount_, uint256 time_);
     event spvReceiveLog(address addr_, uint256 amount_, uint256 time_);
     event electrStakeLog(address feeAddr, uint256 amount, uint256 time_);
@@ -124,7 +106,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         LimitTimeType memory limitTimeList_, // times
         ShareType memory shareList_, // Share
         string memory uri_1,
-        string memory uri_2,
         uint256 expire,
         uint256 reserveFund_
     ) {
@@ -264,7 +245,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             address(this),
             amount * (shareType.firstSharePrice - shareType.stakeSharePrice)
         );
-        emit whiteListPaymentLog( 
+        emit whiteListPaymentLog(
             _msgSender(),
             amount,
             (shareType.firstSharePrice - shareType.stakeSharePrice),
@@ -337,7 +318,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             amount_ = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount_;
-    
 
         // uint256 gAmout = amount_ * shareType.stakeSharePrice;
         // bidding.transferAmount(gAmout);
@@ -381,7 +361,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
         );
-    
+
         require(tokenIdList.length <= maxNftAMOUNT, "tokenIdList lenght >= 10");
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(
@@ -405,13 +385,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         trustStartTime = block.timestamp;
         insuranceStartTime = block.timestamp;
         dividends = deployDividends();
-        if (isClaimRemainBuild) {
-            usdt.safeTransfer(dividends, usdt.balanceOf(address(this)));
-        } else {
-            uint256 amout = usdt.balanceOf(address(this)) -
-                feeType.remainBuildFee -
-                feeType.publicSalePlatformFee;
-            usdt.safeTransfer(dividends, amout);
-        }
+        uint256 amout = usdt.balanceOf(address(this)) -
+            feeType.remainBuildFee -
+            feeType.publicSalePlatformFee;
+        usdt.safeTransfer(dividends, amout);
     }
 }
