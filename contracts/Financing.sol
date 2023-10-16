@@ -39,9 +39,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         whitelistPayment, //Whitelist
         publicSale, //Public sale
         publicSaleFailed, //The public sale failed
-        startBuild, //Start building
-        remainPayment, //Tail payment
-        Bargain, //Pick up leaks
         FINISH, //finish
         FAILED //fail
     }
@@ -57,9 +54,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     uint256 public publicSaleTotalSold; //Total number of the first stage
     uint256 public whitelistPaymentTime; //Whitelist start time
     uint256 public publicSaleTime; //Public sale start time
-    uint256 startBuildTime; //Start of construction time
-    uint256 bargainTime; //Pick up the start time
-    uint256 public remainPaymentTime; //Whitelist start time
     uint256 public electrStartTime; // The last power settlement time
     uint256 public operationStartTime; //The last O&M settlement time
     uint256 public insuranceStartTime; //Time of settlement of the insurance sub-insurance
@@ -89,18 +83,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     event spvReceiveLog(address addr_, uint256 amount_, uint256 time_);
     event electrStakeLog(address feeAddr, uint256 amount, uint256 time_);
     event redeemRemainPaymentLog(uint256 tokenId_, uint256 amount_);
-    event remainBargainLog(
-        address account_,
-        uint256 balance_,
-        uint256 price_,
-        uint256 time_
-    );
-    event remainPaymentLog(
-        address account_,
-        uint256 amount_,
-        uint256 sharePrice,
-        uint256 time_
-    );
     event whiteListPaymentLog(
         address account_,
         uint256 amount_,
@@ -116,7 +98,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         uint256 time_
     );
     event startPublicSaleLog(uint256 unpaid_, uint256 time_);
-    event startBargainLog(uint256 unpaid_, uint256 time_);
     event publicSaleLog(
         address,
         uint256 amount_,
@@ -193,8 +174,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         address shareAddr = deployNFT("shareNFT", "shareNFT");
         receiptNFT = NFT721Impl(receiptAddr);
         receiptNFT.setBaseURI(uri_1);
-        shareNFT = NFT721Impl(shareAddr);
-        shareNFT.setBaseURI(uri_2);
         bidding = bidding_;
         usdt = usdtAddr_;
         schedule = ActionChoices.whitelistPayment;
@@ -207,7 +186,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             abi.encode(
                 reserveFund,
                 usdt,
-                shareNFT,
+                receiptNFT,
                 shareType.totalShare,
                 dividendsExpire,
                 operationStartTime,
@@ -299,8 +278,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     //Check if the down payment is complete
     function _whetherFirstPaymentFinish() private {
         if (publicSaleTotalSold >= shareType.financingShare) {
-            startBuildTime = block.timestamp;
-            schedule = ActionChoices.startBuild;
+            schedule = ActionChoices.FINISH;
             emit whetherFirstPaymentFinishLog(true, block.timestamp);
         }
     }
@@ -417,209 +395,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         usdt.safeTransfer(
             _msgSender(),
             tokenIdList.length * shareType.firstSharePrice
-        );
-    }
-
-    //Receive the first construction fee
-    function claimFirstBuildFee() public nonReentrant {
-        require(platformAddr == _msgSender(), "permission denied");
-        require(schedule == ActionChoices.startBuild, "not startBuild status");
-        //First Fee
-        usdt.safeTransfer(addrType.builderAddr, feeType.firstBuildFee);
-        //Send money to the platform
-        usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
-        //Hit the insurance premium
-        usdt.safeTransfer(
-            addrType.buildInsuranceAddr,
-            feeType.buildInsuranceFee
-        );
-        //Hit the money
-        emit buildInsuranceReceiveLog(
-            addrType.buildInsuranceAddr,
-            feeType.buildInsuranceFee,
-            block.timestamp
-        );
-        schedule = ActionChoices.remainPayment;
-        remainPaymentTime = block.timestamp + limitTimeType.startBuildLimitTime;
-
-        emit claimFirstBuildFeeLog(
-            addrType.builderAddr,
-            feeType.firstBuildFee,
-            block.timestamp
-        );
-    }
-
-    //The user pays the final payment
-    function remainPayment(uint256[] memory tokenIdList) public nonReentrant {
-        require(
-            schedule == ActionChoices.remainPayment,
-            "not remainPayment status"
-        );
-        require(issuedTotalShare < shareType.financingShare, "Sold out");
-        //Cannot be less than zero
-        require(
-            (remainPaymentTime + limitTimeType.remainPaymentLimitTime) >
-                block.timestamp &&
-                block.timestamp > remainPaymentTime,
-            "time expired"
-        );
-
-        for (uint i = 0; i < tokenIdList.length; i++) {
-            require(
-                receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
-                "Insufficient balance"
-            ); //Not an NFT owner
-            issuedTotalShare += 1;
-            receiptNFT.burn(tokenIdList[i]);
-        }
-
-        shareNFT.mint(_msgSender(), tokenIdList.length);
-        usdt.safeTransferFrom(
-            _msgSender(),
-            address(this),
-            tokenIdList.length * shareType.remainSharePrice
-        );
-        emit remainPaymentLog(
-            _msgSender(),
-            tokenIdList.length,
-            shareType.remainSharePrice,
-            block.timestamp
-        );
-        _whetherFinish();
-    }
-
-    //Check if it's done
-    function _whetherFinish() private {
-        if (issuedTotalShare >= shareType.financingShare) {
-            shareNFT.mint(platformFeeAddr, shareType.platformShare);
-            shareNFT.mint(founderAddr, shareType.founderShare);
-            schedule = ActionChoices.FINISH;
-            emit whetherFinishLog(true, block.timestamp);
-        }
-    }
-
-    //Check whether the final payment is successful
-    function checkRemainPayment() public nonReentrant {
-        require(
-            schedule == ActionChoices.remainPayment,
-            "not remainPayment status"
-        );
-
-        if (
-            (remainPaymentTime + limitTimeType.remainPaymentLimitTime) >
-            block.timestamp
-        ) {
-            if (issuedTotalShare >= shareType.financingShare) {
-                _whetherFinish();
-            }
-        } else {
-            if (issuedTotalShare < shareType.financingShare) {
-                bargainTime = block.timestamp;
-                schedule = ActionChoices.Bargain;
-                receiptNFT.pause();
-                emit startBargainLog(
-                    shareType.financingShare - issuedTotalShare,
-                    block.timestamp
-                );
-            }
-        }
-    }
-
-    //Pick up leaks
-    function remainBargain(uint256 amount_) public nonReentrant {
-        require(schedule == ActionChoices.Bargain, "not PAID status");
-        require(issuedTotalShare < shareType.financingShare, "Sold out");
-        require(
-            amount_ <= maxNftAMOUNT && amount_ > 0,
-            "amount Limit Exceeded"
-        );
-        //Cannot be less than zero
-        require(
-            bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
-            "time expired"
-        );
-        //Insufficient balance
-        uint256 balance = shareType.financingShare - issuedTotalShare;
-        require(balance > 0, "Sold out");
-        if (amount_ > balance) {
-            amount_ = balance;
-        }
-        issuedTotalShare += amount_;
-        shareNFT.mint(_msgSender(), amount_);
-        usdt.safeTransferFrom(
-            _msgSender(),
-            address(this),
-            amount_ * shareType.remainSharePrice
-        );
-        _whetherFinish();
-        emit remainBargainLog(
-            _msgSender(),
-            amount_,
-            amount_ * shareType.remainSharePrice,
-            block.timestamp
-        );
-    }
-
-    //Check for leaks
-    function checkBargain() public nonReentrant {
-        require(schedule == ActionChoices.Bargain, "not PAID status");
-        //Cannot be less than zero
-        require(
-            bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
-            "RemainPayment time is not up"
-        );
-
-        if (issuedTotalShare < shareType.financingShare) {
-            schedule = ActionChoices.FAILED;
-            emit whetherFinishLog(false, block.timestamp);
-        } else {
-            _whetherFinish();
-        }
-    }
-
-    //Redemption of equity payments
-    function redeemRemainPayment(
-        uint256[] memory tokenIdList
-    ) public nonReentrant {
-        require(schedule == ActionChoices.FAILED, "not FAILED status");
-        require(
-            tokenIdList.length <= 10 && tokenIdList.length > 0,
-            "not FAILED status"
-        );
-        for (uint i = 0; i < tokenIdList.length; i++) {
-            require(
-                receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
-                "Insufficient owner"
-            );
-            //Check your balance
-            receiptNFT.burn(tokenIdList[i]);
-            issuedTotalShare--;
-            //Hit the money
-            emit redeemRemainPaymentLog(
-                tokenIdList[i],
-                shareType.remainSharePrice
-            );
-        }
-        usdt.safeTransfer(   
-            _msgSender(),
-            shareType.remainSharePrice * tokenIdList.length
-        );
-    }
-
-    //Receive the remaining payment
-    function claimRemainBuildFee() public nonReentrant {
-        require(_msgSender() == addrType.builderAddr, "permission denied");
-        require(schedule == ActionChoices.FINISH, "not FINISH status");
-        require(isClaimRemainBuild == false, "Can not receive repeatedly"); //It cannot be claimed repeatedly
-        usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
-        usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
-        isClaimRemainBuild = true;
-        operationStartTime = block.timestamp;
-        electrStartTime = block.timestamp;
-        emit claimRemainBuildFeeLog(
-            addrType.builderAddr,
-            feeType.remainBuildFee,
-            block.timestamp
         );
     }
 
