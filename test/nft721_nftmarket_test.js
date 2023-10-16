@@ -8,9 +8,7 @@ const tools = require('../tools/web3-utils');
 contract("nft721_nftswap_test", (accounts) => {
 
     let user = accounts[5]
-
     var nft;
-
     before(async function () {
         // const bid = await BiddingTest.deployed();
         const usdt = await USDTTest.deployed();
@@ -50,7 +48,6 @@ contract("nft721_nftswap_test", (accounts) => {
 
         const usdt = await USDTTest.deployed();
         const swap = await NFTMarket.deployed();
-
         const order = await swap.inOrder(nft.address, 1)
         console.log(`order tokenID 1 ${order}`)
         //
@@ -58,6 +55,20 @@ contract("nft721_nftswap_test", (accounts) => {
         assert.equal(ap.receipt.status, true, "approve failed !");
 
         const buyTx = await swap.purchase(nft.address, 1, { from: user })
+        assert.equal(buyTx.receipt.status, true, "purchase failed !");
+    }
+
+    const batchPurchase = async function () {
+
+        const usdt = await USDTTest.deployed();
+        const swap = await NFTMarket.deployed();
+        const order = await swap.inOrder(nft.address, 1)
+        console.log(`order tokenID 1 ${order}`)
+        //
+        const ap = await usdt.approve(swap.address, order.price, { from: user })
+        assert.equal(ap.receipt.status, true, "approve failed !");
+
+        const buyTx = await swap.batchPurchase(nft.address, [1,2,3], { from: user })
         assert.equal(buyTx.receipt.status, true, "purchase failed !");
 
     }
@@ -71,5 +82,7 @@ contract("nft721_nftswap_test", (accounts) => {
             tools.errors(error,'Invalid Order')
         }
     });
+
+    it("testing batchPurchase() should assert true", batchPurchase);
 
 })

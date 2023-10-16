@@ -11,7 +11,7 @@ const axios = require('axios');
 
 module.exports = async function (deployer, network, accounts) {
 
-    if (process.env.nftSwap||process.env.DBGovernor) {
+    if (process.env.nftSwap || process.env.DBGovernor || process.env.USDTOnly || process.env.SkipTest) {
         return
     }
     const deplorerUser = accounts[0]

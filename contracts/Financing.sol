@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -285,7 +285,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             address(this),
             amount * (shareType.firstSharePrice - shareType.stakeSharePrice)
         );
-        emit whiteListPaymentLog(
+        emit whiteListPaymentLog( 
             _msgSender(),
             amount,
             (shareType.firstSharePrice - shareType.stakeSharePrice),
@@ -600,7 +600,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
                 shareType.remainSharePrice
             );
         }
-        usdt.safeTransfer(
+        usdt.safeTransfer(   
             _msgSender(),
             shareType.remainSharePrice * tokenIdList.length
         );

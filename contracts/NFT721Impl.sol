@@ -31,6 +31,10 @@ contract NFT721Impl is
         return baseURI;
     }
 
+    function currentID() public view returns (uint256) {
+        return _tokenIdCounter.current();
+    }
+
     string public baseURI;
 
     function pause() public onlyOwner {

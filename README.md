@@ -12,3 +12,8 @@ truffle migrate
 # testing unit
 truffle test
 ```
+
+```shell
+usdt=0x2b12300398f4bbd4c278a6435e712561074ba453 nftSwap=true truffle deploy --network polygon
+```
+

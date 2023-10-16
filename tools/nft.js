@@ -17,6 +17,8 @@ module.exports = {
         console.log(`NFT ownerOf ${contractAddr} name ${name} symbol ${symbol}`)
         return erc721.ownerOf(tokenId)
      },
+
+     
      nftBalance: async function (contract, address) {
       let config = {
           method: 'get',
