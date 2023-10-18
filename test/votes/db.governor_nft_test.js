@@ -30,18 +30,20 @@ contract("db.governor_nft_test", (accounts) => {
         const tx = await nft.safeTransferFrom(accounts[2], accounts[3], 1, { from: accounts[2] })
         assert.equal(tx.receipt.status, true, "mint failed !")
 
-        const bnTimepoint = await web3.eth.getBlockNumber()
-        console.log(`blockNumber ${bnTimepoint}`)
-
         await tools.timeout(5000)
 
         await delegate(accounts[3], accounts[3])
 
+        await delegate(accounts[2], accounts[3])
+
         await tools.timeout(5000)
 
+        const bnTimepoint = await web3.eth.getBlockNumber()
+        console.log(`blockNumber ${bnTimepoint}`)
+
+        await tools.timeout(2000)
         const votesblockNumber = await nft.getPastVotes(accounts[3], bnTimepoint)
         console.log(`getPastVotes ${votesblockNumber}`)
-        // const vf = nft.getPastVotes(accounts[3],timepoint)
 
         const votes = await nft.getVotes(accounts[3])
         console.log(`user ${accounts[3]} votes ${votes}`)

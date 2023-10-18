@@ -13,7 +13,7 @@ contract("db.governor_test", (accounts) => {
     before(async function () {
 
         const nft = await NFTImpl.deployed();
-        const tx = await nft.mint(accounts[2], 10);
+        const tx = await nft.mint(accounts[2], 20);
         assert.equal(tx.receipt.status, true, "mint failed !");
         
     });

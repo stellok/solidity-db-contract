@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./NFT721Impl.sol";
 import "./Operation.sol";
-import "./FinancType.sol";
+import "./common/FinancType.sol";
 
 interface IBidding {
     //return the subscription quantity,
@@ -152,7 +152,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         );
 
         address receiptAddr = deployNFT("DB", "DB");
-        address shareAddr = deployNFT("shareNFT", "shareNFT");
         receiptNFT = NFT721Impl(receiptAddr);
         receiptNFT.setBaseURI(uri_1);
         bidding = bidding_;

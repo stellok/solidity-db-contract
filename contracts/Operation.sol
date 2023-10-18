@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./FinancType.sol";
+import "./common/FinancType.sol";
 
 contract Operation is AccessControl, ReentrancyGuard, FinancType {
     using SafeERC20 for IERC20;
