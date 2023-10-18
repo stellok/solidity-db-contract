@@ -23,7 +23,7 @@ contract FinancType {
         uint256 operationsFee; //shipping fee
         uint256 electrFee; //electricity bill
         uint256 electrStakeFee; //Pledge electricity fee
-        uint256 buildInsuranceFee; //build premium
+        uint256 buildInsuranceFee; //build premium //TODO unused
         uint256 insuranceFee; //warranty fee
         uint256 spvFee; //spv management fee
         uint256 publicSalePlatformFee; //public sale platform fee
@@ -55,7 +55,6 @@ contract FinancType {
         uint256 sharePrice; //Shares
         uint256 stakeSharePrice; //Stake share price
         uint256 firstSharePrice; //First share price
-        uint256 remainSharePrice; //Backpayment of share price
     }
 
     ShareType public shareType;

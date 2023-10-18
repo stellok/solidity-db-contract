@@ -135,8 +135,7 @@ module.exports = async function (deployer, network, accounts) {
 
     const sharePrice = await tools.USDTToWei(usdtc, '100')
     const stakeSharePrice = await tools.USDTToWei(usdtc, '5')   //5%
-    const firstSharePrice = await tools.USDTToWei(usdtc, '30')   //30%
-    const remainSharePrice = await tools.USDTToWei(usdtc, '70') //70%
+    const firstSharePrice = await tools.USDTToWei(usdtc, '100')   //100%
 
 
     const whitelistPaymentLimitTime = 1; // 白名单限时
@@ -159,7 +158,7 @@ module.exports = async function (deployer, network, accounts) {
         [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee, trustFee],                                           // []feeList_10
         [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr, trustAddr],                                                                                                 // []addrList_7
         [whitelistPaymentLimitTime, publicSaleLimitTime, startBuildLimitTime, bargainLimitTime, remainPaymentLimitTime, electrIntervalTime, operationIntervalTime, insuranceIntervalTime, spvIntervalTime, trustIntervalTime],     // []limitTimeList_9
-        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                                                              // []shareList_8
+        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice],                                                                              // []shareList_8
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         30,
         100,

@@ -119,12 +119,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         limitTimeType = limitTimeList_;
         feeType = feeList_;
         // feeList_ field check
-        require(feeList_.firstBuildFee != 0, "firstBuildFee == 0"); //First build model
-        require(feeList_.remainBuildFee != 0, "remainBuildFee == 0"); //Remaining construction money
+
         require(feeList_.operationsFee != 0, "operationsFee == 0"); //Shipping costs
         require(feeList_.electrFee != 0, "electrFee== 0"); //Electricity
         require(feeList_.electrStakeFee != 0, "electrStakeFee == 0"); // Stake electricity charges
-        require(feeList_.buildInsuranceFee != 0, "buildInsuranceFee == 0"); //Construction insurance premium
         require(feeList_.insuranceFee != 0, "insuranceFee == 0"); //Warranty fee
         require(feeList_.spvFee != 0, "spvFee== 0"); //Trust management fees
         require(address(usdtAddr_) != address(0), "usdt Can not be empty");
@@ -138,9 +136,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
         founderAddr = founderAddr_;
         require(
-            shareType.sharePrice ==
-                shareType.firstSharePrice + //30
-                    shareType.remainSharePrice, //70
+            shareType.sharePrice == shareType.firstSharePrice,
             "sharePrice verification failed"
         ); //Price verification failed
         require(
@@ -259,6 +255,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     function _whetherFirstPaymentFinish() private {
         if (publicSaleTotalSold >= shareType.financingShare) {
             schedule = ActionChoices.FINISH;
+            usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
             emit whetherFirstPaymentFinishLog(true, block.timestamp);
         }
     }
@@ -385,7 +382,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         insuranceStartTime = block.timestamp;
         dividends = deployDividends();
         uint256 amout = usdt.balanceOf(address(this)) -
-            feeType.remainBuildFee -
             feeType.publicSalePlatformFee;
         usdt.safeTransfer(dividends, amout);
     }
