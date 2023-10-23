@@ -18,6 +18,6 @@ jobs:
         with:
           name: dist-without-markdown
           path: |
-            dist
-            !dist/**/*.md
+            build
+            !build/**/*.json
 
