@@ -18,6 +18,6 @@ jobs:
         with:
           name: dist-without-markdown
           path: |
-            build
-            !build/**/*.json
+           build/contracts
+           
 
