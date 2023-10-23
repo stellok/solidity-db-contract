@@ -13,11 +13,13 @@ jobs:
       - run: npm install
       - run: npm install -g truffle
       - run: truffle compile
+      - name: Tar files
+        run: tar -cvzf contracts.tar.gz build/contracts
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: dist-without-markdown
+          name: dist-files
           path: |
-           build/contracts
+           contracts.tar.gz
            
 
