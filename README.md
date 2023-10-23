@@ -1,3 +1,5 @@
+[![Build Status](https://github.com/stellok/solidity-db-contract/workflows/db-contracts/badge.svg?branch=master)](https://github.com/stellok/solidity-db-contract/actions)
+
 ```shell
 
 # install dep
