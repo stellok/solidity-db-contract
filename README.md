@@ -1,5 +1,7 @@
-[![Build Status](https://github.com/stellok/solidity-db-contract/workflows/db-contracts/badge.svg)](https://github.com/stellok/solidity-db-contract/actions)
+DB Contracts
+==============
 
+[![Build Status](https://github.com/stellok/solidity-db-contract/workflows/db-contracts/badge.svg)](https://github.com/stellok/solidity-db-contract/actions)
 [![Test Status](https://github.com/stellok/solidity-db-contract/workflows/db-contracts-test/badge.svg)](https://github.com/stellok/db-contracts-test/actions)
 
 ```shell
