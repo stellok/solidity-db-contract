@@ -1,0 +1,21 @@
+name: db-contracts-test
+on: [push]
+jobs:
+  # Label of the container job
+  test-job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+      - run: npm install
+      - run: npm install -g truffle
+      - run: npm install -g ganache
+      - run: nohup ganache -m 'during retreat copy liberty gauge acquire twenty nice today dry leader speed' -b 12 > nohup.out 2> nohup.err < /dev/null &
+      - run: npm run test
+
+
+           
+
