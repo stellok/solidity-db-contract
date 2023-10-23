@@ -42,7 +42,7 @@
  */
 
 require('dotenv').config();
-// const { MNEMONIC, PROJECT_ID } = process.env;
+const { MNEMONIC, PROJECT_ID } = process.env;
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
@@ -78,12 +78,26 @@ module.exports = {
 
         //http://192.168.1.251:8549
         local: {
-          provider: () => new HDWalletProvider('during retreat copy liberty gauge acquire twenty nice today dry leader speed', `http://192.168.1.251:8549/`),
-          network_id: '*',       // Goerli's id
-          confirmations: 1,    // # of confirmations to wait between deployments. (default: 0)
-          timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
-          skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+            provider: () => new HDWalletProvider(MNEMONIC, `http://192.168.1.251:8549/`),
+            network_id: '*',       // Goerli's id
+            confirmations: 1,    // # of confirmations to wait between deployments. (default: 0)
+            timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+            skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
         },
+
+        polygon: {
+            provider: () => {
+                return new HDWalletProvider(MNEMONIC, `https://rpc.ankr.com/polygon/${PROJECT_ID}`)
+            },
+            timeout: 600000,
+            networkCheckTimeout: 10000000,
+            network_id: 137,
+            confirmations: 2,
+            timeoutBlocks: 2000,
+            skipDryRun: true,
+            gas: 5000000,
+            gasPrice: 110000000000,
+        }
         //
         // An additional network, but with some advanced options…
         // advanced: {
@@ -129,7 +143,7 @@ module.exports = {
                     runs: 200
                 },
                 viaIR: true,
-                evmVersion: "constantinople"
+                evmVersion: "istanbul"
             }
         }
     },
