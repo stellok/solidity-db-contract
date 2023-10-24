@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 truffle test -g BiddingTest-MinerIntentMoney
 truffle test -g BiddingTest-paydd 
 truffle test -g BiddingTest-main
