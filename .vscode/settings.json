@@ -1,4 +1,5 @@
 {
     "commentTranslate.source": "Bing",
-    "commentTranslate.multiLineMerge": false
+    "commentTranslate.multiLineMerge": false,
+    "commentTranslate.hover.enabled": false
 }
