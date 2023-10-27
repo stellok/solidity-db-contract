@@ -11,22 +11,17 @@ const axios = require('axios');
 
 module.exports = async function (deployer, network, accounts) {
 
-    if (process.env.nftSwap||process.env.DBGovernor) {
+    if (process.env.nftSwap || process.env.DBGovernor || process.env.USDTOnly || process.env.SkipTest) {
         return
     }
     const deplorerUser = accounts[0]
 
-    const usdtOnly = process.env.USDTOnly
-
     let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
 
-    if (usdtOnly) {
-        console.log(`only deployed usdt`)
-        return
-    } else {
-        const usdtContract = await USDT.deployed();
-        usdt = usdtContract.address
-    }
+    
+    const usdtContract = await USDT.deployed();
+    usdt = usdtContract.address
+    
 
     await deployer.deploy(NFTImpl, 'DB-a', 'DB-a', { from: deplorerUser })
 
@@ -140,8 +135,7 @@ module.exports = async function (deployer, network, accounts) {
 
     const sharePrice = await tools.USDTToWei(usdtc, '100')
     const stakeSharePrice = await tools.USDTToWei(usdtc, '5')   //5%
-    const firstSharePrice = await tools.USDTToWei(usdtc, '30')   //30%
-    const remainSharePrice = await tools.USDTToWei(usdtc, '70') //70%
+    const firstSharePrice = await tools.USDTToWei(usdtc, '100')   //100%
 
 
     const whitelistPaymentLimitTime = 1; // 白名单限时
@@ -164,8 +158,7 @@ module.exports = async function (deployer, network, accounts) {
         [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee, trustFee],                                           // []feeList_10
         [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr, trustAddr],                                                                                                 // []addrList_7
         [whitelistPaymentLimitTime, publicSaleLimitTime, startBuildLimitTime, bargainLimitTime, remainPaymentLimitTime, electrIntervalTime, operationIntervalTime, insuranceIntervalTime, spvIntervalTime, trustIntervalTime],     // []limitTimeList_9
-        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                                                              // []shareList_8
-        "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
+        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice],                                                                              // []shareList_8
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         30,
         100,
@@ -187,9 +180,6 @@ module.exports = async function (deployer, network, accounts) {
     console.log(`share ${JSON.stringify(share)}`)
 
     const receiptNFT = await FinancingContract.receiptNFT()
-    const shareNFT = await FinancingContract.shareNFT()
-    const u = await FinancingContract.usdt()
-    console.log(`receiptNFT: ${receiptNFT} shareNFT: ${shareNFT}`)
 
     // IERC20 usdt,
     // IERC721 nft,
@@ -197,13 +187,13 @@ module.exports = async function (deployer, network, accounts) {
     // address financingAddr_,
     // uint256 totalShares_
 
+
     axios.defaults.baseURL = 'http://192.168.1.115:8088';
     axios.defaults.timeout = 3000;
     await axios.post('/cache/abi', { contract: usdt, abi: JSON.stringify(USDT.abi), include: 'contract' })
     await axios.post('/cache/abi', { contract: bidContract.address, abi: JSON.stringify(bidContract.abi) })
     await axios.post('/cache/abi', { contract: FinancingContract.address, abi: JSON.stringify(FinancingContract.abi) })
     await axios.post('/cache/abi', { contract: receiptNFT, abi: JSON.stringify(NFTImpl.abi) })
-    await axios.post('/cache/abi', { contract: shareNFT, abi: JSON.stringify(NFTImpl.abi) })
     // await axios.post('/cache/abi', { contract: divid.address, abi: JSON.stringify(Dividends.abi) })
     console.log('regist end')
 };

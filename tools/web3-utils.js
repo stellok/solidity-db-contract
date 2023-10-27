@@ -73,7 +73,7 @@ module.exports = {
         let resultApprove = await contract.approve(to, amount, { from: caller })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
     },
-    errors: async function(error,include){
+    errors: function(error,include){
         assert(error.message.includes(include), `Expected an error with message ${error}`);
     }
 

@@ -22,6 +22,7 @@ contract NFTMarket is ERC721Holder, Ownable {
         address indexed buyer,
         address indexed nftAddr,
         uint256 indexed tokenId,
+        uint256 fee,
         uint256 price
     );
     event Revoke(
@@ -103,7 +104,6 @@ contract NFTMarket is ERC721Holder, Ownable {
             "You do not own this token ID"
         );
 
-        require(_nft.getApproved(_tokenId) == address(this), "Need Approval"); //The contract is authorized
         require(_price > 0); // The price is greater than 0
 
         Order storage _order = nftList[_nftAddr][_tokenId]; //Set NF holders and prices
@@ -139,9 +139,10 @@ contract NFTMarket is ERC721Holder, Ownable {
 
         uint256 price = _order.price;
 
+        uint256 fee;
         //Transfer fee
         if (feeAddr != address(0) && persent > 0) {
-            uint256 fee = (_order.price * persent) / 100;
+            fee = (_order.price * persent) / 100;
             usdt.safeTransfer(feeAddr, fee);
             price -= fee;
         }
@@ -150,7 +151,7 @@ contract NFTMarket is ERC721Holder, Ownable {
         usdt.safeTransfer(_order.owner, price);
 
         // Release the purchase event
-        emit Purchase(msg.sender, _nftAddr, _tokenId, _order.price);
+        emit Purchase(msg.sender, _nftAddr, _tokenId, fee, _order.price);
 
         delete nftList[_nftAddr][_tokenId]; // Delete Order
     }

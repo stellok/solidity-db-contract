@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -73,6 +73,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     bool public isDdFee; //Whether due diligence fees are paid
     bool public isPayService; //Whether or not to pay
     bool public isPayMinerToSpv; //Whether miner fees are paid
+    bool public isPayDD;
 
     address public platformAddr; //Platform management
     address public platformFeeAddr; //Platform management fee address
@@ -506,7 +507,9 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     function payDD() public onlyRole(ADMIN) {
+        require(isPayDD == false, "It can only be called once");
         usdt.safeTransfer(DDAddr, ddFee);
+        isPayDD = true;
         emit payDDLog(DDAddr, ddFee, block.timestamp);
     }
 

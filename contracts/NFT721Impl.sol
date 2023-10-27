@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Votes.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./common/INFT.sol";
 
 contract NFT721Impl is
     ERC721,
@@ -16,7 +17,8 @@ contract NFT721Impl is
     Pausable,
     Ownable,
     EIP712,
-    ERC721Votes
+    ERC721Votes,
+    INFT
 {
     using Counters for Counters.Counter;
 
@@ -29,6 +31,10 @@ contract NFT721Impl is
 
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
+    }
+
+    function currentID() public view returns (uint256) {
+        return _tokenIdCounter.current();
     }
 
     string public baseURI;
