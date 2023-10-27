@@ -10,13 +10,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./NFT721Impl.sol";
 import "./Operation.sol";
 import "./common/FinancType.sol";
-
-interface IBidding {
-    //return the subscription quantity,
-    function viewSubscribe(address) external view returns (uint256);
-
-    function transferAmount(uint256 amount) external;
-}
+import "./common/IBidding.sol";
 
 //Equity financing
 contract FinancingV1 is AccessControl, Pausable, ReentrancyGuard, FinancType {
@@ -288,7 +282,6 @@ contract FinancingV1 is AccessControl, Pausable, ReentrancyGuard, FinancType {
         return mAmount;
     }
 
-    //TODO
     function publicSale(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not publicSale status");
         require(
@@ -315,8 +308,9 @@ contract FinancingV1 is AccessControl, Pausable, ReentrancyGuard, FinancType {
         }
         publicSaleTotalSold += amount_;
 
-        // uint256 gAmout = amount_ * shareType.stakeSharePrice;
-        // bidding.transferAmount(gAmout);
+        // Turn over 5% of the subscription
+        uint256 gAmout = amount_ * shareType.stakeSharePrice;
+        bidding.transferAmount(gAmout);
 
         uint256 mAmount = amount_ *
             (shareType.firstSharePrice - shareType.stakeSharePrice);
