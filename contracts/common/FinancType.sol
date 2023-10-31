@@ -9,7 +9,6 @@ contract FinancType {
         address insuranceAddr; //insurance provider
         address operationsAddr; //operation and maintenance provider
         address spvAddr; //SPV address
-        address electrStakeAddr; //Electricity pledge address
         address electrAddr; //electric man
         address trustAddr; //trustManager man
     }
@@ -22,7 +21,6 @@ contract FinancType {
         uint256 remainBuildFee; //Remaining construction funds
         uint256 operationsFee; //shipping fee
         uint256 electrFee; //electricity bill
-        uint256 electrStakeFee; //Pledge electricity fee
         uint256 buildInsuranceFee; //build premium
         uint256 insuranceFee; //warranty fee
         uint256 spvFee; //spv management fee

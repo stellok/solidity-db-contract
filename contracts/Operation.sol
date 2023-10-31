@@ -291,25 +291,25 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
         emit trustReceiveLog(addrType.trustAddr, amount, year, block.timestamp);
     }
 
-    bool electrStakeLock;
+    // bool electrStakeLock;
 
-    //Electricity deposit collection
-    function electrStake() public nonReentrant {
-        require(
-            _msgSender() == addrType.electrStakeAddr,
-            "user does not have permission"
-        );
-        require(electrStakeLock == false, "You have claimed it");
-        //To determine the first claim requires pledge electricity TODO time calculation formula
-        electrStakeLock = true;
+    // //Electricity deposit collection
+    // function electrStake() public nonReentrant {
+    //     require(
+    //         _msgSender() == addrType.electrStakeAddr,
+    //         "user does not have permission"
+    //     );
+    //     require(electrStakeLock == false, "You have claimed it");
+    //     //To determine the first claim requires pledge electricity TODO time calculation formula
+    //     electrStakeLock = true;
 
-        USDT.safeTransfer(addrType.electrStakeAddr, feeType.electrStakeFee);
-        emit electrStakeLog(
-            addrType.electrStakeAddr,
-            feeType.electrStakeFee,
-            block.timestamp
-        );
-    }
+    //     USDT.safeTransfer(addrType.electrStakeAddr, feeType.electrStakeFee);
+    //     emit electrStakeLog(
+    //         addrType.electrStakeAddr,
+    //         feeType.electrStakeFee,
+    //         block.timestamp
+    //     );
+    // }
 
     //Electricity collection once every 30 days
     function energyReceive() public nonReentrant {

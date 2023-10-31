@@ -155,7 +155,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         require(feeList_.remainBuildFee != 0, "remainBuildFee == 0"); //Remaining construction money
         require(feeList_.operationsFee != 0, "operationsFee == 0"); //Shipping costs
         require(feeList_.electrFee != 0, "electrFee== 0"); //Electricity
-        require(feeList_.electrStakeFee != 0, "electrStakeFee == 0"); // Stake electricity charges
         require(feeList_.buildInsuranceFee != 0, "buildInsuranceFee == 0"); //Construction insurance premium
         require(feeList_.insuranceFee != 0, "insuranceFee == 0"); //Warranty fee
         require(feeList_.spvFee != 0, "spvFee== 0"); //Trust management fees
