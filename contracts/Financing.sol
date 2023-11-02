@@ -44,6 +44,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     mapping(address => bool) paidUser; //Paid-up users
 
+    uint256 platformShare;
+    uint256 founderShare;
+
     address public platformAddr; //Platform management address
     address public platformFeeAddr; //Platform payment address
     address public founderAddr; //founder
@@ -191,6 +194,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         bidding = bidding_;
         usdt = usdtAddr_;
         schedule = ActionChoices.whitelistPayment;
+
+        platformShare = shareType.platformShare;
+        founderShare = shareType.founderShare;
     }
 
     function deployDividends() internal returns (address) {
@@ -351,7 +357,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             amount_ = shareType.financingShare - publicSaleTotalSold;
         }
         publicSaleTotalSold += amount_;
-    
+
         // Turn over 5% of the subscription
         uint256 gAmout = amount_ * shareType.stakeSharePrice;
         bidding.transferAmount(gAmout);
@@ -395,7 +401,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             schedule == ActionChoices.publicSaleFailed,
             "not publicSaleFailed status"
         );
-    
+
         require(tokenIdList.length <= maxNftAMOUNT, "tokenIdList lenght >= 10");
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(
@@ -483,10 +489,42 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     //Check if it's done
     function _whetherFinish() private {
         if (issuedTotalShare >= shareType.financingShare) {
-            shareNFT.mint(platformFeeAddr, shareType.platformShare);
-            shareNFT.mint(founderAddr, shareType.founderShare);
             schedule = ActionChoices.FINISH;
             emit whetherFinishLog(true, block.timestamp);
+        }
+    }
+
+    //The system claims the NFT
+    function nftSystemWithdrow(uint256 mintSum) public {
+        require(
+            _msgSender() == platformFeeAddr || _msgSender() == founderAddr,
+            "You don't have permissions"
+        );
+        require(
+            schedule == ActionChoices.FINISH,
+            "The project was not completed"
+        );
+        
+        if (_msgSender() == platformFeeAddr) {
+            require(platformShare > 0, "It has already been claimed");
+            if (platformShare > mintSum) {
+                shareNFT.mint(platformFeeAddr, mintSum);
+                platformShare -= mintSum;
+            } else {
+                shareNFT.mint(platformFeeAddr, platformShare);
+                platformShare = 0;
+            }
+        }
+
+        if (_msgSender() == founderAddr) {
+            require(founderShare > 0, "It has already been claimed");
+            if (founderShare > mintSum) {
+                shareNFT.mint(founderAddr, mintSum);
+                founderShare -= mintSum;
+            } else {
+                shareNFT.mint(founderAddr, founderShare);
+                founderShare = 0;
+            }
         }
     }
 
