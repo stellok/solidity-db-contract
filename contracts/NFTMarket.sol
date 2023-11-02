@@ -49,9 +49,10 @@ contract NFTMarket is ERC721Holder, Ownable {
 
     uint256 public persent;
     address public feeAddr;
-
+    
+    //
     function setTransactionFee(uint8 _persent) public onlyOwner {
-        require(_persent <= 100, "persent Must be between 1 and 100");
+        require(_persent <= 1000, "persent Must be between 1 and 1000");
         persent = _persent;
     }
 
@@ -142,7 +143,7 @@ contract NFTMarket is ERC721Holder, Ownable {
         uint256 fee;
         //Transfer fee
         if (feeAddr != address(0) && persent > 0) {
-            fee = (_order.price * persent) / 100;
+            fee = (_order.price * persent) / 1000;
             usdt.safeTransfer(feeAddr, fee);
             price -= fee;
         }
