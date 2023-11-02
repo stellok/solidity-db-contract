@@ -89,7 +89,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     uint256 subscribeTime; //Subscription time
     uint256 subscribeLimitTime; //Limited time
     uint256 minerStakeLimitTime; //Miner staking time limit
-    uint256 public constant maxNftAMOUNT = 10;
+    uint256 public subscribeMax;
+    uint256 public userMax;
 
     event unSubscribeLog(address addr, uint256 id, uint256 time);
     event startSubscribeLog(
@@ -152,13 +153,17 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         address ddAddr_,
         address platformFeeAddr_,
         address spvAddr_,
-        address owner_
+        address owner_,
+        uint256 subscribeMax_,
+        uint256 userMax_
     ) {
+
         _setRoleAdmin(ADMIN, OWNER);
         _setRoleAdmin(PLATFORM, ADMIN);
         _setupRole(PLATFORM, _msgSender()); //TODO _msgSender
         _setupRole(ADMIN, adminAddr_); //
         _setupRole(OWNER, owner_);
+
         ddFee = ddFee_; //Due diligence fees
         DDAddr = ddAddr_; //Mine provider
         platformAddr = _msgSender(); //Platform management
@@ -169,6 +174,9 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         startTime = block.timestamp;
         usdt = usdtAddr_;
         platformFeeAddr = platformFeeAddr_;
+
+        subscribeMax = subscribeMax_;
+        userMax = userMax_;
     }
 
     //Pay the service fee
@@ -303,8 +311,8 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(stock > 0, "cannot be less than zero");
         require(financingShare * 2 > totalSold, "sold out"); //Sold out
         require(subscribeTime > 0, "UnStart subscribe"); //Not turned on
-        require(stock <= maxNftAMOUNT, "stock > 10");
-        require(user[_msgSender()].amount <= 100, "total stock must < 100");
+        require(stock <= subscribeMax, "subscribe limit");
+        require(user[_msgSender()].amount <= userMax, "user total subscribe limit");
 
         require(
             subscribeTime + subscribeLimitTime > block.timestamp,
