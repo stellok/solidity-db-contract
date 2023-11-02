@@ -604,7 +604,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         require(schedule == ActionChoices.FINISH, "not FINISH status");
         require(isClaimRemainBuild == false, "Can not receive repeatedly"); //It cannot be claimed repeatedly
         usdt.safeTransfer(addrType.builderAddr, feeType.remainBuildFee);
-        usdt.safeTransfer(platformFeeAddr, feeType.publicSalePlatformFee);
+        usdt.safeTransfer(platformFeeAddr, feeType.remainPlatformFee);
         isClaimRemainBuild = true;
         operationStartTime = block.timestamp;
         electrStartTime = block.timestamp;

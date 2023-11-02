@@ -24,8 +24,8 @@ contract FinancType {
         uint256 buildInsuranceFee; //build premium
         uint256 insuranceFee; //warranty fee
         uint256 spvFee; //spv management fee
-        uint256 publicSalePlatformFee; //public sale platform fee
-        uint256 remainPlatformFee; //public sale platform fee
+        uint256 publicSalePlatformFee; //public sale platform fee //30%
+        uint256 remainPlatformFee; //public sale platform fee     //70%
         uint256 trustFee; //trust management fee
     }
     FeeType public feeType;
