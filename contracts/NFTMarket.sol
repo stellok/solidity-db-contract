@@ -49,7 +49,7 @@ contract NFTMarket is ERC721Holder, Ownable {
 
     uint256 public persent;
     address public feeAddr;
-    
+
     //
     function setTransactionFee(uint8 _persent) public onlyOwner {
         require(_persent <= 1000, "persent Must be between 1 and 1000");
@@ -105,7 +105,7 @@ contract NFTMarket is ERC721Holder, Ownable {
             "You do not own this token ID"
         );
 
-        require(_price > 0); // The price is greater than 0
+        require(_price > 0, "Price must be greater than 0"); // The price is greater than 0
 
         Order storage _order = nftList[_nftAddr][_tokenId]; //Set NF holders and prices
         _order.owner = msg.sender;

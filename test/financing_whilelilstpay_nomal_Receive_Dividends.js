@@ -407,4 +407,45 @@ contract("FinancingTest-whilepay-Dividends-Receive", (accounts) => {
     }
 
     it("testing trustManagementReceive() should assert true", trustManagementReceive)
+
+    const nftSystemWithdrow = async function (n) {
+        const financing = await Financing.deployed()
+        const shareType = await financing.shareType()
+        console.log(`shareType ${shareType.platformShare} ${shareType.founderShare}`)
+        const tx = await financing.nftSystemWithdrow(n)
+        assert.equal(tx.receipt.status, true, "electrStake failed !");
+    }
+
+    it("testing nftSystemWithdrow", async function () {
+        // platformShare = shareType.platformShare;
+        // founderShare = shareType.founderShare;
+        await nftSystemWithdrow(10)
+    })
+
+    it("testing nftSystemWithdrow() should assert true", async function () {
+        const financing = await Financing.deployed();
+        const platformFeeAddr = await financing.platformFeeAddr();
+        const founderAddr = await financing.founderAddr();
+        const platformShare = await financing.platformShare();
+        const founderShare = await financing.founderShare();
+        const shareNFT = await NFT721Impl.at(await financing.shareNFT());
+
+        // Testing platform NFT withdrawal
+        // Claim all available platform NFTs
+        const numPlatformNFTs = await shareNFT.balanceOf(platformFeeAddr);
+        await financing.nftSystemWithdrow(numPlatformNFTs, { from: platformFeeAddr });
+        const remainingPlatformShare = await financing.platformShare();
+        const remainingPlatformNFTs = await shareNFT.balanceOf(platformFeeAddr);
+        assert.equal(remainingPlatformShare.toNumber(), 0, "Remaining platform share should be zero");
+        assert.equal(remainingPlatformNFTs.toNumber(), 0, "Remaining platform NFTs should be zero");
+
+        // Testing founder NFT withdrawal
+        // Claim all available founder NFTs
+        const numFounderNFTs = await shareNFT.balanceOf(founderAddr);
+        await financing.nftSystemWithdrow(numFounderNFTs, { from: founderAddr });
+        const remainingFounderShare = await financing.founderShare();
+        const remainingFounderNFTs = await shareNFT.balanceOf(founderAddr);
+        assert.equal(remainingFounderShare.toNumber(), 0, "Remaining founder share should be zero");
+        assert.equal(remainingFounderNFTs.toNumber(), 0, "Remaining founder NFTs should be zero");
+    });
 })

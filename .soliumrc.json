@@ -1,0 +1,21 @@
+{
+  "extends": "solium:recommended",
+  "plugins": [
+    "security"
+  ],
+  "rules": {
+    "quotes": [
+      "error",
+      "double"
+    ],
+    "indentation": [
+      "error",
+      4
+    ],
+    "linebreak-style": [
+      0
+    ],
+    "no-inline-assembly":[0],
+    "no-trailing-whitespace":[0]
+  }
+}

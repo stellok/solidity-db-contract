@@ -7,27 +7,35 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Votes.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "./common/INft.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "../common/INft.sol";
+import "../common/Referral.sol";
 
-contract NFT721Impl is
+contract UserNft is
     ERC721,
     ERC721URIStorage,
     Pausable,
     Ownable,
-    EIP712,
-    ERC721Votes,
-    INft
+    INft,
+    Referral,
+    AccessControl
 {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
 
+    mapping(address => uint16) levels;
+
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE"); //
+    bytes32 public constant REFERRAL_ROLE = keccak256("REFERRAL_ROLE");
+
     constructor(
         string memory name_,
         string memory symbol_
-    ) ERC721(name_, symbol_) EIP712(name_, "1") {}
+    ) ERC721(name_, symbol_) {
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    }
 
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
@@ -54,13 +62,6 @@ contract NFT721Impl is
         _setTokenURI(tokenId, uri);
     }
 
-    function mint(address account, uint256 amount) public onlyOwner {
-        require(amount <= 100, "mint amount >=100");
-        for (uint i = 0; i < amount; i++) {
-            safeMint(account, "");
-        }
-    }
-
     function setBaseURI(string memory baseURI_) external onlyOwner {
         baseURI = baseURI_;
     }
@@ -71,9 +72,6 @@ contract NFT721Impl is
         uint256 tokenId,
         uint256 batchSize
     ) internal override {
-        if (to != address(0)) {
-            _requireNotPaused();
-        }
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
@@ -84,7 +82,7 @@ contract NFT721Impl is
         address to,
         uint256 tokenId,
         uint256 batchSize
-    ) internal override(ERC721, ERC721Votes) {
+    ) internal override(ERC721) {
         super._afterTokenTransfer(from, to, tokenId, batchSize);
     }
 
@@ -106,7 +104,29 @@ contract NFT721Impl is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721, ERC721URIStorage) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    )
+        public
+        view
+        override(ERC721, ERC721URIStorage, IERC165, AccessControl)
+        returns (bool)
+    {
+        return
+            interfaceId == type(Referral).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
+    function getLevel(address user) public view returns (uint256) {
+        return levels[user];
+    }
+
+    function setLevel(
+        address user,
+        uint16 level
+    ) public onlyRole(REFERRAL_ROLE) {
+        levels[user] = level;
+    }
+
+    function mint(address user) public onlyRole(REFERRAL_ROLE) {
+        safeMint(user, "");
     }
 }

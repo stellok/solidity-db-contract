@@ -256,7 +256,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     //Whitelist payments
     function whiteListPayment() public nonReentrant {
-        require(_msgSender() == tx.origin, "Refusal to contract transactions");
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
         require(shareType.financingShare > publicSaleTotalSold, "sold out");
         require(!paidUser[_msgSender()], " Cannot participate repeatedly"); //Participation cannot be repeated
@@ -504,7 +503,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             schedule == ActionChoices.FINISH,
             "The project was not completed"
         );
-        
+
         if (_msgSender() == platformFeeAddr) {
             require(platformShare > 0, "It has already been claimed");
             if (platformShare > mintSum) {

@@ -10,18 +10,15 @@ const axios = require('axios');
 
 
 module.exports = async function (deployer, network, accounts) {
-
     if (process.env.nftSwap || process.env.DBGovernor || process.env.USDTOnly || process.env.SkipTest) {
         return
     }
     const deplorerUser = accounts[0]
 
     let usdt = '0xed269cACd679309FAC6132F2A773B3d49535Dc87'
-
-    
     const usdtContract = await USDT.deployed();
     usdt = usdtContract.address
-    
+
 
     await deployer.deploy(NFTImpl, 'DB-a', 'DB-a', { from: deplorerUser })
 
@@ -42,6 +39,8 @@ module.exports = async function (deployer, network, accounts) {
         accounts[1],                              //  address spvAddr_
         accounts[2],
         accounts[3],                             // owner
+        10,//uint256 subscribeMax_,
+        100,//uint256 userMax_
         { from: deplorerUser }
     )
 
@@ -51,50 +50,49 @@ module.exports = async function (deployer, network, accounts) {
 
 
     // IERC20 usdtAddr_,
-    // IBidding bidding_,     //  招投标合约
+    // IBidding bidding_,     //  Tender Contracts
     // address platformFeeAddr_,
     // address founderAddr_,
-    // uint256[] memory feeList_,  // fees
-    // address[] memory addrList_, // address  集合
-    // uint256[] memory limitTimeList_,  // times  集合
-    // uint256[] memory shareList_  // Share  集合
+    // uint256[] memory feeList_,        // fees
+    // address[] memory addrList_,       // address  
+    // uint256[] memory limitTimeList_,  // times 
+    // uint256[] memory shareList_       // Share
 
     // struct FeeType {
-    //     uint256 firstBuildFee; //首次建造款
-    //     uint256 remainBuildFee; //剩余建造款
-    //     uint256 operationsFee; //运费费
-    //     uint256 electrFee; // 电费
-    //     uint256 electrStakeFee; // 质押电费
-    //     uint256 buildInsuranceFee; // 建造保险费
-    //     uint256 insuranceFee; // 保修费
-    //     uint256 spvFee; // 信托管理费
-    //     uint256 publicSalePlatformFee; // 公售平台费
-    //     uint256 remainPlatformFee; // 公售平台费
+    //     uint256 firstBuildFee; //The first construction model
+    //     uint256 remainBuildFee; //The remaining construction money
+    //     uint256 operationsFee; //Shipping costs
+    //     uint256 electrFee; // Electricity
+    //     uint256 electrStakeFee; // Pledge electricity bills
+    //     uint256 buildInsuranceFee; // Construction insurance premiums
+    //     uint256 insuranceFee; // Warranty Fee
+    //     uint256 spvFee; // Trust administration fees
+    //     uint256 publicSalePlatformFee; // Public sale platform fee
+    //     uint256 remainPlatformFee; // Public sale platform fee
     // }
     // FeeType public feeType;
 
-    // //  限时 limit  间隔 Interval
     // struct LimitTimeType {
-    //     uint256 whitelistPaymentLimitTime; // 白名单限时
-    //     uint256 publicSaleLimitTime; // 公售限时
-    //     uint256 startBuildLimitTime; // 开始建造时间
-    //     uint256 bargainLimitTime; // 捡漏开始时间
-    //     uint256 remainPaymentLimitTime; // 白名单开始时间
-    //     uint256 electrIntervalTime; // 电力间隔时间
-    //     uint256 operationIntervalTime; // 运维间隔时间
-    //     uint256 insuranceIntervalTime; // 保险次结算时间
-    //     uint256 spvIntervalTime; // 信托间隔时间
+    //     uint256 whitelistPaymentLimitTime; // The whitelist is time-limited
+    //     uint256 publicSaleLimitTime; // Public sale for a limited time
+    //     uint256 startBuildLimitTime; // Start of construction time
+    //     uint256 bargainLimitTime; // Pick up the start time
+    //     uint256 remainPaymentLimitTime; // The start time of the whitelist
+    //     uint256 electrIntervalTime; // Electricity intervals
+    //     uint256 operationIntervalTime; // O&M interval
+    //     uint256 insuranceIntervalTime; // The time of settlement of the insurance
+    //     uint256 spvIntervalTime; // Trust interval
     // }
 
     // struct ShareType {
-    //     uint256 totalShare; // 总股数
-    //     uint256 financingShare; // 融资融资股
-    //     uint256 founderShare; // 创始人股数
-    //     uint256 platformShare; // 平台股数
-    //     uint256 sharePrice; // 股价
-    //     uint256 stakeSharePrice; // 质押股价
-    //     uint256 firstSharePrice; // 首次股价
-    //     uint256 remainSharePrice; // 补缴股价
+    //     uint256 totalShare; // Total number of shares
+    //     uint256 financingShare; // Financing Stocks
+    //     uint256 founderShare; // Number of shares of the founder
+    //     uint256 platformShare; // The number of shares on the platform
+    //     uint256 sharePrice; // Shares
+    //     uint256 stakeSharePrice; // Stake share price
+    //     uint256 firstSharePrice; // Initial share price
+    //     uint256 remainSharePrice; //Top-up share price
     // }
 
     //  shareType.sharePrice] == shareList[shareType.stakeSharePrice] +shareList[shareType.firstSharePrice] +shareList[shareType. remainSharePrice
@@ -102,14 +100,14 @@ module.exports = async function (deployer, network, accounts) {
 
 
 
-    const builderAddr = accounts[2]; // 建造人
-    const buildInsuranceAddr = accounts[3]; // 建造保险地址
-    const insuranceAddr = accounts[4]; // 保险提供方
-    const operationsAddr = accounts[2]; // 运维提供方
-    const spvAddr = accounts[2]; // SPV地址
-    const electrStakeAddr = accounts[2]; // 电力质押地址
-    const electrAddr = accounts[2]; // 电力人
-    const trustAddr = accounts[5]; // 电力人
+    const builderAddr = accounts[2]; // Builders
+    const buildInsuranceAddr = accounts[3]; // Build an insured address
+    const insuranceAddr = accounts[4]; // Insurance Providers
+    const operationsAddr = accounts[2]; // O&M providers
+    const spvAddr = accounts[2]; // SPV address
+    const electrStakeAddr = accounts[2]; // Power pledge address
+    const electrAddr = accounts[2]; //
+    const trustAddr = accounts[5]; //
 
 
 
@@ -135,30 +133,32 @@ module.exports = async function (deployer, network, accounts) {
 
     const sharePrice = await tools.USDTToWei(usdtc, '100')
     const stakeSharePrice = await tools.USDTToWei(usdtc, '5')   //5%
-    const firstSharePrice = await tools.USDTToWei(usdtc, '100')   //100%
+    const firstSharePrice = await tools.USDTToWei(usdtc, '30')   //100%
+    const remainSharePrice = await tools.USDTToWei(usdtc, '70')   //100%
 
 
-    const whitelistPaymentLimitTime = 1; // 白名单限时
-    const publicSaleLimitTime = 60; // 公售限时
-    const startBuildLimitTime = 4; // 开始建造时间
-    const bargainLimitTime = 3600; // 捡漏开始时间
-    const remainPaymentLimitTime = 60; // 白名单开始时间
-    const electrIntervalTime = 7; // 电力间隔时间
-    const operationIntervalTime = 8; // 运维间隔时间
-    const insuranceIntervalTime = 9; // 保险次结算时间
-    const spvIntervalTime = 10; // 信托间隔时间
+    const whitelistPaymentLimitTime = 1; // The whitelist is time-limited
+    const publicSaleLimitTime = 60; // Public sale for a limited time
+    const startBuildLimitTime = 4; // Start of construction time
+    const bargainLimitTime = 3600; // Pick up the start time
+    const remainPaymentLimitTime = 60; // The start time of the whitelist
+    const electrIntervalTime = 7; // Electricity intervals
+    const operationIntervalTime = 8; // O&M interval
+    const insuranceIntervalTime = 9; // The time of settlement of the insurance
+    const spvIntervalTime = 10; // Trust interval
     const trustIntervalTime = 10;
 
     //deploy Financing
     const tx = await deployer.deploy(Financing,
-        usdt,                                                                                                                                                                                                   // IERC20 usdtAddr_
-        bidContract.address,                                                                                                                                                                                    // address bidding_
-        accounts[0],                                                                                                                                                                                            // address platformFeeAddr_
-        accounts[0],                                                                                                                                                                                            // address founderAddr_
-        [firstBuildFee, remainBuildFee, operationsFee, electrFee, electrStakeFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee, trustFee],                                           // []feeList_10
-        [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrStakeAddr, electrAddr, trustAddr],                                                                                                 // []addrList_7
+        usdt,                                                                                                                                                                                                            // IERC20 usdtAddr_
+        bidContract.address,                                                                                                                                                                                             // address bidding_
+        accounts[0],                                                                                                                                                                                                     // address platformFeeAddr_
+        accounts[0],                                                                                                                                                                                                     // address founderAddr_
+        [firstBuildFee, remainBuildFee, operationsFee, electrFee, buildInsuranceFee, insuranceFee, spvFee, publicSalePlatformFee, remainPlatformFee, trustFee],                                                           // []feeList_10
+        [builderAddr, buildInsuranceAddr, insuranceAddr, operationsAddr, spvAddr, electrAddr, trustAddr],                                                                                                                   // []addrList_7
         [whitelistPaymentLimitTime, publicSaleLimitTime, startBuildLimitTime, bargainLimitTime, remainPaymentLimitTime, electrIntervalTime, operationIntervalTime, insuranceIntervalTime, spvIntervalTime, trustIntervalTime],     // []limitTimeList_9
-        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice],                                                                              // []shareList_8
+        [totalShare, financingShare, founderShare, platformShare, sharePrice, stakeSharePrice, firstSharePrice, remainSharePrice],                                                                                                               // []shareList_8
+        "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         30,
         100,
@@ -188,7 +188,7 @@ module.exports = async function (deployer, network, accounts) {
     // uint256 totalShares_
 
 
-    axios.defaults.baseURL = 'http://192.168.1.115:8088';
+    axios.defaults.baseURL = 'http://127.0.0.1:8088';
     axios.defaults.timeout = 3000;
     await axios.post('/cache/abi', { contract: usdt, abi: JSON.stringify(USDT.abi), include: 'contract' })
     await axios.post('/cache/abi', { contract: bidContract.address, abi: JSON.stringify(bidContract.abi) })

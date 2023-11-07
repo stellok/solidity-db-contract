@@ -157,7 +157,6 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 subscribeMax_,
         uint256 userMax_
     ) {
-
         _setRoleAdmin(ADMIN, OWNER);
         _setRoleAdmin(PLATFORM, ADMIN);
         _setupRole(PLATFORM, _msgSender()); //TODO _msgSender
@@ -312,7 +311,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(financingShare * 2 > totalSold, "sold out"); //Sold out
         require(subscribeTime > 0, "UnStart subscribe"); //Not turned on
         require(stock <= subscribeMax, "subscribe limit");
-        require(user[_msgSender()].amount <= userMax, "user total subscribe limit");
+        require(
+            user[_msgSender()].amount <= userMax,
+            "user total subscribe limit"
+        );
 
         require(
             subscribeTime + subscribeLimitTime > block.timestamp,
