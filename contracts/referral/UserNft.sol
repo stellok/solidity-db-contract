@@ -34,6 +34,8 @@ contract UserNft is
         string memory name_,
         string memory symbol_
     ) ERC721(name_, symbol_) {
+        //Make sure the tokenID > 0
+        _tokenIdCounter.increment();
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -55,7 +57,10 @@ contract UserNft is
         _unpause();
     }
 
-    function safeMint(address to, string memory uri) public onlyOwner {
+    function safeMint(
+        address to,
+        string memory uri
+    ) public onlyRole(REFERRAL_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);

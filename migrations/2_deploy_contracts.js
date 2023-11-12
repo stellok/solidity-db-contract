@@ -7,10 +7,12 @@ const { net } = require('web3');
 const tools = require('../tools/web3-utils');
 const BN = require('bn.js');//Dividends
 const axios = require('axios');
+require('dotenv').config();
+const { NFT_SERVER } = process.env;
 
 
 module.exports = async function (deployer, network, accounts) {
-    if (process.env.nftSwap || process.env.DBGovernor || process.env.USDTOnly || process.env.SkipTest) {
+    if (process.env.nftSwap || process.env.DBGovernor || process.env.USDTOnly || process.env.SkipTest || process.env.referral) {
         return
     }
     const deplorerUser = accounts[0]
@@ -188,7 +190,7 @@ module.exports = async function (deployer, network, accounts) {
     // uint256 totalShares_
 
 
-    axios.defaults.baseURL = 'http://127.0.0.1:8088';
+    axios.defaults.baseURL = `${NFT_SERVER}`
     axios.defaults.timeout = 3000;
     await axios.post('/cache/abi', { contract: usdt, abi: JSON.stringify(USDT.abi), include: 'contract' })
     await axios.post('/cache/abi', { contract: bidContract.address, abi: JSON.stringify(bidContract.abi) })

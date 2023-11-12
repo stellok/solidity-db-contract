@@ -1,5 +1,4 @@
-DB Contracts
-==============
+# DB Contracts
 
 [![Build Status](https://github.com/stellok/solidity-db-contract/workflows/db-contracts/badge.svg)](https://github.com/stellok/solidity-db-contract/actions)
 [![Test Status](https://github.com/stellok/solidity-db-contract/workflows/db-contracts-test/badge.svg)](https://github.com/stellok/db-contracts-test/actions)
@@ -20,6 +19,5 @@ truffle test
 ```
 
 ```shell
-usdt=0x2b12300398f4bbd4c278a6435e712561074ba453 nftSwap=true truffle deploy --network polygon
+usdt=0x2b12300398f4bbd4c278a6435e712561074ba453 nftMarket=true truffle deploy --network polygon
 ```
-

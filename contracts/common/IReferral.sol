@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-interface Referral is IERC721 {
+interface IReferral is IERC721 {
     //Get the user's NFT level
     function getLevel(address user) external view returns (uint256);
 

@@ -4,16 +4,15 @@ const USDT = artifacts.require("Usdt");
 
 
 module.exports = async function (deployer, network, accounts) {
-    if (process.env.nftSwap) {
-        var usdt = process.env.usdt
+    var usdt = process.env.usdt
+    if (process.env.nftMarket) {
         if (usdt === undefined) {
-            const usdtContract = await USDT.deployed();
-            usdt = usdtContract.address
-            console.log(`usdt address ${usdt}`)
+            console.log("usdtAdd not set")
+            return
         }
         console.log(`usdt == ${usdt} ${usdt === ''}`)
         await deployer.deploy(NFTMarket, usdt)
         const nftMarket = await NFTMarket.deployed();
-        console.log(`nftSwap address : ${nftMarket.address}`)
+        console.log(`NFTMarket address : ${nftMarket.address}`)
     }
 }

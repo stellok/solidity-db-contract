@@ -96,7 +96,7 @@ module.exports = {
             timeoutBlocks: 2000,
             skipDryRun: true,
             gas: 5000000,
-            gasPrice: 110000000000,
+            gasPrice: 210000000000,
         }
         //
         // An additional network, but with some advanced options…
