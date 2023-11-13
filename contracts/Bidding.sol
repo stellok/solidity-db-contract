@@ -14,9 +14,9 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    bytes32 public constant PLATFORM = keccak256("PLATFORM");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
-    bytes32 public constant OWNER = keccak256("OWNER");
+    bytes32 public constant PLATFORM_ROLE = keccak256("PLATFORM_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE");
 
     uint256 startTime; //Start time minerStake
     uint256 public totalSold;
@@ -157,11 +157,12 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 subscribeMax_,
         uint256 userMax_
     ) {
-        _setRoleAdmin(ADMIN, OWNER);
-        _setRoleAdmin(PLATFORM, ADMIN);
-        _setupRole(PLATFORM, _msgSender()); //TODO _msgSender
-        _setupRole(ADMIN, adminAddr_); //
-        _setupRole(OWNER, owner_);
+        _setRoleAdmin(ADMIN_ROLE, EMERGENCY_ROLE);
+        _setRoleAdmin(PLATFORM_ROLE, ADMIN_ROLE);
+
+        _setupRole(PLATFORM_ROLE, _msgSender()); //
+        _setupRole(ADMIN_ROLE, adminAddr_); //
+        _setupRole(EMERGENCY_ROLE, owner_);
 
         ddFee = ddFee_; //Due diligence fees
         DDAddr = ddAddr_; //Mine provider
@@ -202,7 +203,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //Refund of due diligence fees
-    function refundDDFee() public nonReentrant onlyRole(ADMIN) {
+    function refundDDFee() public nonReentrant onlyRole(ADMIN_ROLE) {
         require(isDdFee == true, "user does not have permission");
         isDdFee = false;
 
@@ -232,7 +233,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
 
         _checkRole(
-            PLATFORM,
+            PLATFORM_ROLE,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
 
@@ -271,7 +272,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             )
         );
         _checkRole(
-            PLATFORM,
+            PLATFORM_ROLE,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
 
@@ -287,7 +288,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 stakeSharePrice_,
         uint256 subscribeTime_,
         uint256 subscribeLimitTime_
-    ) public nonReentrant whenNotPaused onlyRole(PLATFORM) {
+    ) public nonReentrant whenNotPaused onlyRole(PLATFORM_ROLE) {
         require(financingShare_ > 0, "financingShare cannot be zero"); //Cannot be zero
         require(stakeSharePrice_ > 0, "subscribeLimitTime_ cannot be zero"); //Not turned on
         require(subscribeTime_ > 0, "subscribeTime_ cannot be zero"); //Cannot be zero
@@ -354,7 +355,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         );
 
         _checkRole(
-            PLATFORM,
+            PLATFORM_ROLE,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
 
@@ -382,7 +383,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             )
         );
         _checkRole(
-            PLATFORM,
+            PLATFORM_ROLE,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
         usdt.safeTransferFrom(_msgSender(), address(this), stakeAmount);
@@ -418,7 +419,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             )
         );
         _checkRole(
-            PLATFORM,
+            PLATFORM_ROLE,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
         stakeMiner[_msgSender()].stakeAmount -= amount;
@@ -449,7 +450,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
             )
         );
         _checkRole(
-            PLATFORM,
+            PLATFORM_ROLE,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
         companyList[role].totalAmount = totalAmount;
@@ -461,7 +462,9 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //Refund stake
-    function unPlanStake(companyType role) public nonReentrant onlyRole(ADMIN) {
+    function unPlanStake(
+        companyType role
+    ) public nonReentrant onlyRole(ADMIN_ROLE) {
         require(companyList[role].exist == true, "company  does not exist"); //The user does not exist
         require(
             companyList[role].unStake == false,
@@ -490,7 +493,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         return stakeMiner[account].stakeAmount;
     }
 
-    function setFinancing(address addr) public onlyRole(PLATFORM) {
+    function setFinancing(address addr) public onlyRole(PLATFORM_ROLE) {
         require(addr.isContract(), "addr must Contract address");
         financAddr = addr;
     }
@@ -508,15 +511,15 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         return user[account].amount;
     }
 
-    function pause() public whenNotPaused onlyRole(PLATFORM) {
+    function pause() public whenNotPaused onlyRole(PLATFORM_ROLE) {
         _pause();
     }
 
-    function unpause() public whenPaused onlyRole(ADMIN) {
+    function unpause() public whenPaused onlyRole(ADMIN_ROLE) {
         _unpause();
     }
 
-    function payDD() public onlyRole(ADMIN) {
+    function payDD() public onlyRole(ADMIN_ROLE) {
         require(isPayDD == false, "It can only be called once");
         usdt.safeTransfer(DDAddr, ddFee);
         isPayDD = true;
@@ -528,14 +531,14 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         uint256 amount,
         uint256 expire,
         bytes memory signature
-    ) public onlyRole(ADMIN) {
+    ) public onlyRole(ADMIN_ROLE) {
         require(amount >= 0, "address is null"); //Not equal to zero
         require(isPayMinerToSpv == false, "already paid"); //Already paid
         bytes32 msgSplice = keccak256(
             abi.encodePacked(address(this), "4afc651e", amount, expire)
         );
         _checkRole(
-            PLATFORM,
+            PLATFORM_ROLE,
             ECDSA.recover(ECDSA.toEthSignedMessageHash(msgSplice), signature)
         );
         isPayMinerToSpv = true;
@@ -544,7 +547,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
     }
 
     //Emergency withdrawals
-    function withdraw(uint256 amount, address addr) public onlyRole(OWNER) {
+    function withdraw(
+        uint256 amount,
+        address addr
+    ) public onlyRole(EMERGENCY_ROLE) {
         usdt.safeTransfer(addr, amount);
     }
 

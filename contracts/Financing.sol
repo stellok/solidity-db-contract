@@ -47,6 +47,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     uint256 platformShare;
     uint256 founderShare;
 
+    address emergencyAddr;
+
     address public platformAddr; //Platform management address
     address public platformFeeAddr; //Platform payment address
     address public founderAddr; //founder
@@ -142,10 +144,13 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         string memory uri_1,
         string memory uri_2,
         uint256 expire,
-        uint256 reserveFund_
+        uint256 reserveFund_,
+        address emergencyAddr_
     ) {
         dividendsExpire = expire;
         reserveFund = reserveFund_;
+
+        emergencyAddr = emergencyAddr_;
 
         whitelistPaymentTime = block.timestamp;
         saleIsActive = false;
@@ -216,7 +221,8 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
                 insuranceStartTime,
                 feeType,
                 addrType,
-                limitTimeType
+                limitTimeType,
+                emergencyAddr
             )
         );
         bytes32 shareSalt = keccak256(abi.encodePacked(address(this), "share"));

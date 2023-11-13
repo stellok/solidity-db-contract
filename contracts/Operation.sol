@@ -50,6 +50,8 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
 
     uint256 public reserveFund;
 
+    address emergencyAddr;
+
     constructor(
         uint256 reserveFund_,
         IERC20 usdt,
@@ -63,7 +65,8 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
         uint256 insuranceStartTime_,
         FeeType memory feeList_, // fees
         AddrType memory addrList_, // address
-        LimitTimeType memory limitTimeList_ // times
+        LimitTimeType memory limitTimeList_, // times
+        address emergencyAddr_
     ) {
         reserveFund = reserveFund_;
 
@@ -83,6 +86,8 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
         addrType = addrList_;
         limitTimeType = limitTimeList_;
         feeType = feeList_;
+
+        emergencyAddr = emergencyAddr_;
     }
 
     event operationsReceiveLog(
@@ -394,5 +399,10 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
         uint256 tokenId
     ) public view returns (bool) {
         return receiveRecord[index].isReceive[tokenId];
+    }
+
+    function withdraw(uint256 amount, address addr) public {
+        require(_msgSender() == emergencyAddr, "only emergency call");
+        USDT.safeTransfer(addr, amount);
     }
 }
