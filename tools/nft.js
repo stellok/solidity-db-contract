@@ -44,7 +44,7 @@ module.exports = {
             data.tokenIds.forEach(element => {
                 ids.push(parseInt(element))
             });
-            return ids
+            return ids[Symbol.iterator]()
         }
     }
 }

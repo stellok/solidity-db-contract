@@ -6,6 +6,7 @@ const PointsSystem = artifacts.require("PointsSystem");
 const DBM = artifacts.require("DBM");
 const USDTTest = artifacts.require("Usdt");
 const UserNFT = artifacts.require("UserNft");
+const BN = require('bn.js');
 const Args = artifacts.require("Args");
 const axios = require('axios');
 require('dotenv').config();
@@ -22,7 +23,11 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
 
     before(async function () {
 
-        usdt = await USDTTest.deployed();
+        //depoly usdt
+        const init = new BN(10).pow(new BN(6)).mul(new BN('10000000000'))
+        usdt = await USDTTest.new(init)
+
+        //depoly dbm
         dbm = await DBM.new(await web3Utils.USDTToWei(usdt, '10000'), accounts[0]);
 
         userNFT = await UserNFT.new("UserNFT", "UNFT");
@@ -45,6 +50,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
         );
 
         //Sign up for service notifications
+        console.log(`server url ${NFT_SERVER}`)
         await axios.post(`${NFT_SERVER}/cache/abi`, { contract: dbm.address, abi: JSON.stringify(dbm.abi) })
         await axios.post(`${NFT_SERVER}/cache/abi`, { contract: userNFT.address, abi: JSON.stringify(userNFT.abi) })
         await axios.post(`${NFT_SERVER}/cache/abi`, { contract: pointsSystem.address, abi: JSON.stringify(pointsSystem.abi) })
@@ -71,6 +77,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
             assert(error.message.includes("insufficient allowance"), "Expected an error with message 'Error message'.");
         }
         try {
+            //no points updsate
             await pointsSystem.upgrade()
         } catch (error) {
             assert(error.message.includes("Not enough points"), "Expected an error with message 'Error message'.");
@@ -78,6 +85,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
     });
 
     it("should increase", async () => {
+
         await pointsSystem.increase(2, user1, 1200, { from: platform })
         try {
             await mintNft()
@@ -85,12 +93,86 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
             assert(error.message.includes("Please upgrade first"), "Expected an error with message 'Error message'.");
         }
         expect((await pointsSystem.Score(user1)).toString()).to.equal('1200')
+
+        //upgrade level --> 1
         await pointsSystem.upgrade()
         expect((await pointsSystem.currentLevel(user1)).toString()).to.equal('1')
+        expect((await pointsSystem.Score(user1)).toString()).to.equal('200')
+
         await mintNft()
+        //check nft number
+        await web3Utils.timeout(6000)
         const hold = await nft.nftBalance(userNFT.address, user1)
-        console.log(hold)
+        const [tokenId] = hold
+        expect(tokenId).to.equal(1)
+
 
     })
+
+
+    const stakeNft = async () => {
+        //nft balance
+        const hold = await nft.nftBalance(userNFT.address, user1)
+        const [tokenId] = hold
+        expect(tokenId).to.equal(1)
+
+        //nft approve
+        await userNFT.approve(pointsSystem.address, tokenId, { from: user1 });
+        // stake nft
+        await pointsSystem.stake(tokenId, { from: user1 })
+        const balance = await nft.balanceOf(userNFT.address, pointsSystem.address)
+        expect(balance.toString()).to.equal('1')
+
+        //check stake
+        const id = await pointsSystem.checkStaked(user1)
+        expect(id.toString()).to.equal('1')
+    }
+
+    it("should stake nft", async () => {
+        await stakeNft()
+        try {
+            await pointsSystem.upgrade()
+        } catch (error) {
+            assert(error.message.includes("Not enough point"), "Expected an error with message 'Error message'.");
+        }
+    })
+
+
+    it("should rewardsReferral", async () => {
+
+        const dbmToken = await web3Utils.USDTToWei(dbm, 500)
+        await pointsSystem.rewardsReferral(0, 1, user1, dbmToken, { from: platform })
+        const newLocal = await pointsSystem.pendingReward(user1)
+        console.log(newLocal.toString())
+        // expect(newLocal).to.equal(dbmToken.toString())
+
+        try {
+            await pointsSystem.withdrawReward({ from: user1 })
+        } catch (error) {
+            assert(error.message.includes("dbm token has not started yet"), "Expected an error with message 'Error message'.");
+        }
+    })
+
+
+    it("should unStake", async () => {
+
+        await pointsSystem.unStake({ from: user1 })
+        const [tokenId] = await nft.nftBalance(userNFT.address, user1)
+        expect(tokenId).to.equal(1)
+
+    })
+
+
+    it("should increase-upgrade", async () => {
+
+        await pointsSystem.increase(2, user1, 2300, { from: platform })
+        try {
+            await pointsSystem.upgrade({ from: user1 })
+        } catch (error) {
+            web3Utils.errors(error, "No staked NFTs")
+        }
+
+    })
+
 
 });

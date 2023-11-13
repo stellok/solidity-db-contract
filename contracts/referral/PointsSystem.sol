@@ -163,7 +163,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     //Upgrade the level system
     function upgrade() public {
         //Current user level
-        uint need = args.score(currentLevel(_msgSender()) + 1);
+        uint256 need = args.score(currentLevel(_msgSender()) + 1);
         require(Score(_msgSender()) > need, "Not enough points");
 
         //Spend points
@@ -224,7 +224,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         uint256[] memory ids,
         uint8[] memory typ,
         address[] memory user,
-        uint16[] memory score
+        uint256[] memory score
     ) public onlyRole(PLATFORM) {
         require(
             typ.length == user.length && user.length == score.length,

@@ -14,4 +14,5 @@ truffle test -g FinancingTest-whilepay-publicSale --compile-none -b -t
 truffle test -g FinancingTest-whilepay-nomal --compile-none -b -t
 truffle test -g BiddingTest-payMinerToSpv --compile-none -b -t
 truffle test -g FinancingTest-whilepay-Receive --compile-none -b -t
-USDTOnly=true truffle test -g PointsSystem --compile-none -b -t
+truffle test -g PointsSystem_inc_upgrade -b -t
+truffle test -g PointsSystem -b -t

@@ -22,12 +22,11 @@ module.exports = {
     },
     USDTToWei: async function (contract, value) {
         const decimals = await contract.decimals()
-        return new BN(10).
-            pow(
-                new BN(decimals)
-            ).mul(
-                new BN(value)
-            )
+        //500000000000000000000
+        const tenToThePowerOf18 = new BN(10).pow(decimals);
+        const fiveHundred = new BN(value);
+        const result = tenToThePowerOf18.mul(fiveHundred);
+        return result
     },
 
     toBN: function (valuue) {

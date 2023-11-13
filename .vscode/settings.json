@@ -1,7 +1,7 @@
 {
   "commentTranslate.source": "Bing",
   "commentTranslate.multiLineMerge": false,
-  "commentTranslate.hover.enabled": true,
+  "commentTranslate.hover.enabled": false,
   "commentTranslate.targetLanguage": "en",
   "editor.formatOnSave": true,
   "solidity.formatter": "prettier", // This is the default so it might be missing.
