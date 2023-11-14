@@ -47,6 +47,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
             userNFT.address,
             platform,
             admin,
+            await web3Utils.USDTToWei(usdt, '600')
         );
 
         //Sign up for service notifications
@@ -62,17 +63,17 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
         // await web3Utils.transferUSDT(usdt, accounts[0], user1, '100000')
     })
 
-    const mintNft = async () => {
+    const mintNft = async (user) => {
         // Check the balance of USDT before the minting
-        const balanceBefore = await usdt.balanceOf(user1);
+        const balanceBefore = await usdt.balanceOf(user);
         // Mint NFT for the user
-        const tx = await pointsSystem.mintNft({ from: user1 });
+        const tx = await pointsSystem.mintNft({ from: user });
         // console.log(tx)
     }
 
     it("should mint NFT", async () => {
         try {
-            await mintNft()
+            await mintNft(user1)
         } catch (error) {
             web3Utils.errors(error, 'insufficient allowance')
         }
@@ -89,7 +90,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
         await pointsSystem.increase(0, 2, user1, 1200, { from: platform })
         expect((await pointsSystem.Score(user1)).toString()).to.equal('1200')
 
-        await mintNft()
+        await mintNft(user1)
         expect((await pointsSystem.Score(user1)).toString()).to.equal('200')
 
         //try upgrade level --> 1 expect staked
@@ -101,7 +102,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
 
         //try mint again , expect 'You've mint NFT'
         try {
-            await mintNft()
+            await mintNft(user1)
         } catch (error) {
             web3Utils.errors(error, "You've mint NFT")
         }
@@ -114,22 +115,22 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
     })
 
 
-    const stakeNft = async () => {
+    const stakeNft = async (user, tokenid) => {
         //nft balance
-        const hold = await nft.nftBalance(userNFT.address, user1)
+        const hold = await nft.nftBalance(userNFT.address, user)
         const [tokenId] = hold
-        expect(tokenId).to.equal(1)
+        expect(tokenId).to.equal(tokenid)
 
         //nft approve
-        await userNFT.approve(pointsSystem.address, tokenId, { from: user1 });
+        await userNFT.approve(pointsSystem.address, tokenId, { from: user });
         // stake nft
-        await pointsSystem.stake(tokenId, { from: user1 })
+        await pointsSystem.stake(tokenId, { from: user })
         const balance = await nft.balanceOf(userNFT.address, pointsSystem.address)
-        expect(balance.toString()).to.equal('1')
+        expect(balance.toNumber()).to.equal(tokenId)
 
         //check stake
-        const id = await pointsSystem.checkStaked(user1)
-        expect(id.toString()).to.equal('1')
+        const id = await pointsSystem.checkStaked(user)
+        expect(id.toNumber()).to.equal(tokenId)
     }
 
     it("should stake nft", async () => {
@@ -137,7 +138,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
         console.log(`user1 score ${user1Score}`)
 
         //stake nft ,first time
-        await stakeNft()
+        await stakeNft(user1, 1)
         const currentLevel = await pointsSystem.currentLevel(user1)
         console.log(`user1 currentLevel ${currentLevel}`)
         expect(currentLevel.toString()).to.equal('1')
@@ -198,6 +199,33 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
         }
 
     })
+
+    it("should nft user1 ==> user2", async () => {
+        const [tokenId1] = await nft.nftBalance(userNFT.address, user1)
+        await userNFT.safeTransferFrom(user1, user2, tokenId1, { from: user1 })
+        //expect No staked NFTs
+        try {
+            const level = await pointsSystem.currentLevel(user2)
+            console.log(`${user2} level ${level}`)
+        } catch (error) {
+            web3Utils.errors(error, 'No staked NFTs')
+        }
+        await web3Utils.timeout(6000)
+        await stakeNft(user2, tokenId1)
+        const level = await pointsSystem.currentLevel(user2)
+        console.log(`${user2} level ${level}`)
+
+        //expect: You already have level
+        try {
+            await mintNft(user2)
+        } catch (error) {
+            web3Utils.errors(error, "You already have level")
+        }
+
+    })
+
+
+
 
 
 });
