@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "../common/INft.sol";
-import "../common/Referral.sol";
+import "../common/IReferral.sol";
 
 contract UserNft is
     ERC721,
@@ -18,7 +18,7 @@ contract UserNft is
     Pausable,
     Ownable,
     INft,
-    Referral,
+    IReferral,
     AccessControl
 {
     using Counters for Counters.Counter;
@@ -116,7 +116,7 @@ contract UserNft is
         returns (bool)
     {
         return
-            interfaceId == type(Referral).interfaceId ||
+            interfaceId == type(IReferral).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 

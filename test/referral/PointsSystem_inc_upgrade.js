@@ -86,7 +86,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
 
     it("should increase", async () => {
 
-        await pointsSystem.increase(2, user1, 1200, { from: platform })
+        await pointsSystem.increase(0, 2, user1, 1200, { from: platform })
         try {
             await mintNft()
         } catch (error) {
@@ -165,7 +165,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
 
     it("should increase-upgrade", async () => {
 
-        await pointsSystem.increase(2, user1, 2300, { from: platform })
+        await pointsSystem.increase(0, 2, user1, 2300, { from: platform })
         try {
             await pointsSystem.upgrade({ from: user1 })
         } catch (error) {

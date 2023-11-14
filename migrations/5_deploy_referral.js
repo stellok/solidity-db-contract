@@ -73,7 +73,5 @@ module.exports = async function (deployer, network, accounts) {
         const nft = await UserNft.at(userNft)
         await nft.grantRole(await nft.REFERRAL_ROLE(), ps.address, { from: dep })
 
-        // const cusdt = await USDT.at(usdt)
-        // await ps.setLevel1Price(await tools.USDTToWei(cusdt, '100'), { from: dep })
     }
 }

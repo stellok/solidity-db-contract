@@ -50,7 +50,7 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
 
     uint256 public reserveFund;
 
-    address emergencyAddr;
+    address public emergencyAddr;
 
     constructor(
         uint256 reserveFund_,

@@ -12,7 +12,7 @@ const { NFT_SERVER } = process.env;
 
 
 module.exports = async function (deployer, network, accounts) {
-    if (process.env.nftSwap || process.env.DBGovernor || process.env.USDTOnly || process.env.SkipTest || process.env.referral) {
+    if (process.env.normal === undefined) {
         return
     }
     const deplorerUser = accounts[0]
@@ -164,6 +164,7 @@ module.exports = async function (deployer, network, accounts) {
         "https://metadata.artlab.xyz/01892bef-5488-84a9-a800-92d55e4e534e/",
         30,
         100,
+        accounts[9],
         { from: deplorerUser }
     )
 

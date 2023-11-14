@@ -37,6 +37,8 @@ contract FinancingV1 is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     ActionChoices public schedule;
 
+    address public emergencyAddr;
+
     mapping(address => bool) paidUser; //Paid-up users
 
     address public platformAddr; //Platform management address
@@ -101,7 +103,8 @@ contract FinancingV1 is AccessControl, Pausable, ReentrancyGuard, FinancType {
         ShareType memory shareList_, // Share
         string memory uri_1,
         uint256 expire,
-        uint256 reserveFund_
+        uint256 reserveFund_,
+        address emergencyAddr_
     ) {
         dividendsExpire = expire;
         reserveFund = reserveFund_;
@@ -146,6 +149,8 @@ contract FinancingV1 is AccessControl, Pausable, ReentrancyGuard, FinancType {
         bidding = bidding_;
         usdt = usdtAddr_;
         schedule = ActionChoices.whitelistPayment;
+
+        emergencyAddr = emergencyAddr_;
     }
 
     function deployDividends() internal returns (address) {
@@ -165,7 +170,8 @@ contract FinancingV1 is AccessControl, Pausable, ReentrancyGuard, FinancType {
                 insuranceStartTime,
                 feeType,
                 addrType,
-                limitTimeType
+                limitTimeType,
+                emergencyAddr
             )
         );
         bytes32 shareSalt = keccak256(abi.encodePacked(address(this), "share"));

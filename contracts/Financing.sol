@@ -47,7 +47,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     uint256 platformShare;
     uint256 founderShare;
 
-    address emergencyAddr;
+    address public emergencyAddr;
 
     address public platformAddr; //Platform management address
     address public platformFeeAddr; //Platform payment address

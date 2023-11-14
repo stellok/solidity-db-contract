@@ -47,7 +47,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     event Upgrade(address user, uint16 level, uint8 typ);
     event Stake(address user, uint256 tokenId, uint256 time);
     event Unstake(address user, uint256 tokenId, uint256 time);
-    event Increase(uint8 typ, address user, uint256 score);
+    event Increase(uint256 id, uint8 typ, address user, uint256 score);
     event Mint(address user, uint256 tokenId, uint256 time);
     event UsePoint(uint8 typ, address user, uint256 score, uint256 time);
     event Reward(uint8 typ, address user, uint256 amount, uint256 time);
@@ -90,15 +90,17 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
     //Increase your points
     function increase(
+        uint256 id,
         uint8 typ,
         address user,
         uint256 score
     ) public onlyRole(PLATFORM) {
         users[user].point += score;
-        emit Increase(typ, user, score);
+        emit Increase(id, typ, user, score);
     }
 
     function increaseBatch(
+        uint256[] memory id,
         uint8[] memory typs,
         address[] memory iUsers,
         uint256[] memory scores
@@ -106,7 +108,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         require(typs.length == iUsers.length, "The parameter is incorrect");
         require(iUsers.length == scores.length, "The parameter is incorrect");
         for (uint i = 0; i < iUsers.length; i++) {
-            increase(typs[i], iUsers[i], scores[i]);
+            increase(id[i], typs[i], iUsers[i], scores[i]);
         }
     }
 
