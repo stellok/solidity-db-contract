@@ -25,7 +25,8 @@ contract UserNft is
 
     Counters.Counter private _tokenIdCounter;
 
-    mapping(address => uint16) levels;
+    //tokenId <==> level
+    mapping(uint256 => uint16) levels;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE"); //
     bytes32 public constant REFERRAL_ROLE = keccak256("REFERRAL_ROLE");
@@ -55,16 +56,6 @@ contract UserNft is
 
     function unpause() public onlyOwner {
         _unpause();
-    }
-
-    function safeMint(
-        address to,
-        string memory uri
-    ) public onlyRole(REFERRAL_ROLE) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
     }
 
     function setBaseURI(string memory baseURI_) external onlyOwner {
@@ -120,18 +111,22 @@ contract UserNft is
             super.supportsInterface(interfaceId);
     }
 
-    function getLevel(address user) public view returns (uint256) {
-        return levels[user];
+    function getLevel(uint256 tokenId) public view returns (uint16) {
+        return levels[tokenId];
     }
 
     function setLevel(
-        address user,
+        uint256 tokenId,
         uint16 level
     ) public onlyRole(REFERRAL_ROLE) {
-        levels[user] = level;
+        levels[tokenId] = level;
     }
 
-    function mint(address user) public onlyRole(REFERRAL_ROLE) {
-        safeMint(user, "");
+    function mint(address to) public onlyRole(REFERRAL_ROLE) returns (uint256) {
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, "");
+        return tokenId;
     }
 }

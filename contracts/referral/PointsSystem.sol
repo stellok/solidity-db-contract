@@ -15,13 +15,12 @@ import "../common/IPointsArgs.sol";
 //Manual upgrade
 //Staking system
 contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
-    bytes32 public constant PLATFORM = keccak256("PLATFORM_ROLE");
+    bytes32 public constant PLATFORM_ROLE = keccak256("PLATFORM_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
     struct User {
         uint256 point;
         //The level of the users
-        uint16 userLevel;
+        // uint16 userLevel;
         //The tokenID of the staked NFT
         uint256 stakeNFT;
         //Whether the user mint NFT or not
@@ -38,7 +37,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for IERC20;
     IERC20 public usdt; // usdt
 
-    IERC20 public dbm; // dbm token
+    IERC20 public dbm; // dbm token address
 
     IReferral public nft;
 
@@ -72,7 +71,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
         //Initialize permissions
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
-        _grantRole(PLATFORM, platFormAddr_);
+        _grantRole(PLATFORM_ROLE, platFormAddr_);
         _grantRole(ADMIN_ROLE, admin_);
     }
 
@@ -94,7 +93,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         uint8 typ,
         address user,
         uint256 score
-    ) public onlyRole(PLATFORM) {
+    ) public onlyRole(PLATFORM_ROLE) {
         users[user].point += score;
         emit Increase(id, typ, user, score);
     }
@@ -104,7 +103,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         uint8[] memory typs,
         address[] memory iUsers,
         uint256[] memory scores
-    ) public onlyRole(PLATFORM) {
+    ) public onlyRole(PLATFORM_ROLE) {
         require(typs.length == iUsers.length, "The parameter is incorrect");
         require(iUsers.length == scores.length, "The parameter is incorrect");
         for (uint i = 0; i < iUsers.length; i++) {
@@ -115,22 +114,20 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     function mintNft() public {
         require(users[_msgSender()].mint == false, "You've mint NFT");
         require(firstNftPrice > 0, "There is no NFT price set");
+        require(checkStaked(_msgSender()) == 0, "You already have level");
         //How to buy with USDT to reach level 1 without points
         uint needScoreV1 = args.score(1);
-        if (currentLevel(_msgSender()) == 0) {
-            if (Score(_msgSender()) < needScoreV1) {
-                usdt.safeTransferFrom(
-                    _msgSender(),
-                    address(this),
-                    firstNftPrice
-                );
-                setLevel(_msgSender(), 1);
-            } else {
-                revert("Please upgrade first");
-            }
+
+        if (Score(_msgSender()) < needScoreV1) {
+            usdt.safeTransferFrom(_msgSender(), address(this), firstNftPrice);
+        } else {
+            users[_msgSender()].point -= needScoreV1;
         }
-        nft.mint(_msgSender());
+
+        uint256 tokenId = nft.mint(_msgSender());
         users[_msgSender()].mint = true;
+        nft.setLevel(tokenId, 1);
+        emit Mint(_msgSender(), tokenId, block.timestamp);
     }
 
     //Users can stake NFTs to get invitation rewards
@@ -185,7 +182,9 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function currentLevel(address user) public view returns (uint16) {
-        return users[user].userLevel;
+        uint256 tokenId = checkStaked(user);
+        require(tokenId > 0, "No staked NFTs");
+        return nft.getLevel(tokenId);
     }
 
     function pendingReward(address user) public view returns (uint256) {
@@ -193,11 +192,11 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function setLevel(address user, uint16 level) internal {
+        uint256 tokenId = checkStaked(user);
         if (level > 1) {
-            require(checkStaked(user) > 0, "No staked NFTs");
+            require(tokenId > 0, "No staked NFTs");
         }
-        users[_msgSender()].userLevel = level;
-        nft.setLevel(user, level);
+        nft.setLevel(tokenId, level);
         //Upgrade NFT levels
         emit Upgrade(_msgSender(), currentLevel(_msgSender()), 1);
     }
@@ -208,7 +207,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         uint8 typ,
         address user,
         uint256 score
-    ) public onlyRole(PLATFORM) {
+    ) public onlyRole(PLATFORM_ROLE) {
         _rewardsReferral(id, typ, user, score);
     }
 
@@ -218,8 +217,10 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         address user,
         uint256 score
     ) internal {
-        users[user].pendingReward += score;
-        emit PendingReward(id, typ, user, score, block.timestamp);
+        if (checkStaked(user) > 0) {
+            users[user].pendingReward += score;
+            emit PendingReward(id, typ, user, score, block.timestamp);
+        }
     }
 
     function rewardsReferralBatch(
@@ -227,7 +228,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         uint8[] memory typ,
         address[] memory user,
         uint256[] memory score
-    ) public onlyRole(PLATFORM) {
+    ) public onlyRole(PLATFORM_ROLE) {
         require(
             typ.length == user.length && user.length == score.length,
             "The parameter is incorrect"

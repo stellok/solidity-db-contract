@@ -2,7 +2,8 @@
 pragma solidity ^0.8.9;
 
 interface IPointsArgs {
-    function reward(uint16 _level) external pure returns (uint256);
+    //这个方法返回的单位必须是wei
+    function reward(uint16 _level) external view returns (uint256);
 
     function score(uint16 _level) external pure returns (uint256);
 
