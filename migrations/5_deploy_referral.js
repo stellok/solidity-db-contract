@@ -3,6 +3,7 @@ const DBM = artifacts.require("DBM");
 const USDT = artifacts.require("Usdt");
 const Args = artifacts.require("Args")
 const UserNft = artifacts.require("UserNft");
+const web3Utils = require('../tools/web3-utils');
 const tools = require('../tools/web3-utils');
 
 // referral=true usdt=0x2b12300398f4bbd4c278a6435e712561074ba453 PointsSystem=true truffle deploy
@@ -48,6 +49,7 @@ module.exports = async function (deployer, network, accounts) {
     }
 
     if (pointsSystem === undefined) {
+        const usdtCtr = await USDT.at(usdt)
         // IERC20 dbm_,
         // IERC20 usdt_,
         // IPointsArgs args_,
@@ -61,6 +63,7 @@ module.exports = async function (deployer, network, accounts) {
             userNft,
             '0x25CFF0Fcfd8F04116249298F43d1F90b946A76C0',
             '0x8d0be07353e6A9902842a28a3DCAcEFBD09C318c',
+            await web3Utils.USDTToWei(usdtCtr, '600'),
             { from: dep })
         const ps = await PointsSystem.deployed()
         console.log(`PointsSystem address : ${ps.address}`)

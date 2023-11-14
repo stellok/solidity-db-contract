@@ -63,7 +63,8 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         IPointsArgs args_,
         IReferral nft_,
         address platFormAddr_,
-        address admin_
+        address admin_,
+        uint256 firstNftPrice_
     ) {
         usdt = usdt_;
         nft = nft_;
@@ -73,6 +74,8 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         _grantRole(PLATFORM_ROLE, platFormAddr_);
         _grantRole(ADMIN_ROLE, admin_);
+
+        firstNftPrice = firstNftPrice_;
     }
 
     function setArgs(IPointsArgs _args) public onlyRole(ADMIN_ROLE) {
@@ -122,6 +125,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
             usdt.safeTransferFrom(_msgSender(), address(this), firstNftPrice);
         } else {
             users[_msgSender()].point -= needScoreV1;
+            emit UsePoint(0, _msgSender(), needScoreV1, block.timestamp);
         }
 
         uint256 tokenId = nft.mint(_msgSender());
