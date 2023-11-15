@@ -312,18 +312,18 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     //Check whether the first payment was successful
     function checkWhiteList() public nonReentrant {
         require(schedule == ActionChoices.whitelistPayment, "not PAID status");
-        require(
+        if (
             whitelistPaymentTime + limitTimeType.whitelistPaymentLimitTime <
-                block.timestamp &&
-                whitelistPaymentTime != 0,
-            "time expired"
-        );
-        if (publicSaleTotalSold < shareType.financingShare) {
-            uint256 unpaid = shareType.financingShare - publicSaleTotalSold;
-            schedule = ActionChoices.publicSale;
-            emit startPublicSaleLog(unpaid, block.timestamp);
-            publicSaleTime = block.timestamp;
-        } else {
+            block.timestamp
+        ) {
+            if (publicSaleTotalSold < shareType.financingShare) {
+                uint256 unpaid = shareType.financingShare - publicSaleTotalSold;
+                schedule = ActionChoices.publicSale;
+                emit startPublicSaleLog(unpaid, block.timestamp);
+                publicSaleTime = block.timestamp;
+            }
+        }
+        if (publicSaleTotalSold >= shareType.financingShare) {
             _whetherFirstPaymentFinish();
         }
     }
@@ -385,16 +385,18 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     //Check the public sale
     function checkPublicSale() public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not publicSale status");
-        require(
-            publicSaleTime + limitTimeType.publicSaleLimitTime <
-                block.timestamp,
-            "time expired"
-        );
+        if (
+            (publicSaleTime + limitTimeType.publicSaleLimitTime) <
+            block.timestamp
+        ) {
+            if (shareType.financingShare > publicSaleTotalSold) {
+                schedule = ActionChoices.publicSaleFailed;
+                emit whetherFirstPaymentFinishLog(false, block.timestamp);
+            }
+        }
+
         if (shareType.financingShare <= publicSaleTotalSold) {
             _whetherFirstPaymentFinish();
-        } else {
-            schedule = ActionChoices.publicSaleFailed;
-            emit whetherFirstPaymentFinishLog(false, block.timestamp);
         }
     }
 
@@ -541,13 +543,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         );
 
         if (
-            (remainPaymentTime + limitTimeType.remainPaymentLimitTime) >
+            (remainPaymentTime + limitTimeType.remainPaymentLimitTime) <
             block.timestamp
         ) {
-            if (issuedTotalShare >= shareType.financingShare) {
-                _whetherFinish();
-            }
-        } else {
             if (issuedTotalShare < shareType.financingShare) {
                 bargainTime = block.timestamp;
                 schedule = ActionChoices.Bargain;
@@ -557,6 +555,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
                     block.timestamp
                 );
             }
+        }
+        if (issuedTotalShare >= shareType.financingShare) {
+            _whetherFinish();
         }
     }
 
@@ -599,15 +600,15 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     function checkBargain() public nonReentrant {
         require(schedule == ActionChoices.Bargain, "not PAID status");
         //Cannot be less than zero
-        require(
-            bargainTime + limitTimeType.bargainLimitTime > block.timestamp,
-            "RemainPayment time is not up"
-        );
 
-        if (issuedTotalShare < shareType.financingShare) {
-            schedule = ActionChoices.FAILED;
-            emit whetherFinishLog(false, block.timestamp);
-        } else {
+        if ((bargainTime + limitTimeType.bargainLimitTime) < block.timestamp) {
+            if (issuedTotalShare < shareType.financingShare) {
+                schedule = ActionChoices.FAILED;
+                emit whetherFinishLog(false, block.timestamp);
+            }
+        }
+
+        if (issuedTotalShare >= shareType.financingShare) {
             _whetherFinish();
         }
     }
