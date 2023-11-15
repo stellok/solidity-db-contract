@@ -34,6 +34,8 @@ contract("BiddingTest-planStake", (accounts) => {
     let owner = accounts[0]
     let stakeAmount, totalAmount
 
+
+
     before(async function () {
 
 
@@ -91,7 +93,7 @@ contract("BiddingTest-planStake", (accounts) => {
 
     it("testing stop_planStake() should assert true", async function () {
         const bid = await BiddingTest.deployed();
-        const tx = await bid.pause({from: owner})
+        const tx = await bid.pause({ from: owner })
         assert.equal(tx.receipt.status, true, "pause failed !");
         try {
             await planStake(2)

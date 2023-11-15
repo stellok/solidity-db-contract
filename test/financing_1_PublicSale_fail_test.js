@@ -18,19 +18,24 @@ const ActionChoices = {
     FINISH: 7, // 完成
     FAILED: 8 // 失败
 }
-
+//
 
 contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
 
     let user = accounts[5]
 
+    let bid;
+    let usdt;
+    let financing;
     before(async function () {
-        const bid = await BiddingTest.deployed();
-        const usdt = await USDTTest.deployed();
-        const financing = await Financing.deployed()
+
+        bid = await BiddingTest.deployed();
+        usdt = await USDTTest.deployed();
+        financing = await Financing.deployed()
+
         const shareType = await financing.shareType()
 
-        await tools.transferUSDT(usdt, accounts[0], user, '900000')
+        await tools.transferUSDT(usdt, accounts[0], user, '90000000')
 
         await tools.transferUSDT(usdt, accounts[0], financing.address, '10')
 
@@ -46,9 +51,6 @@ contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
 
     it("testing subscribe() should assert true", async function () {
         //subscribe
-        const bid = await BiddingTest.deployed();
-        const usdt = await USDTTest.deployed();
-
         let stock = 10;
 
         let financingShare = await bid.financingShare();
@@ -80,9 +82,6 @@ contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
 
     it("testing whiteListPayment() should assert true", async function () {
 
-        const financing = await Financing.deployed()
-        const usdt = await USDTTest.deployed();
-
         let resultApprove = await usdt.approve(Financing.address, await tools.USDTToWei(usdt, '10000'), { from: user })
         assert.equal(resultApprove.receipt.status, true, "approve failed !");
 
@@ -98,8 +97,6 @@ contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
     //checkWhiteList()
     //publicSaleTotalSold < shareType.financingShare
     it("testing checkWhiteList() should assert true", async function () {
-
-        const financing = await Financing.deployed()
 
         const checkWhiteList = await financing.checkWhiteList()
         assert.equal(checkWhiteList.receipt.status, true, "checkWhiteList failed !");
@@ -128,10 +125,6 @@ contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
 
     it("testing publicSale() should assert true", async function () {
 
-        const financing = await Financing.deployed()
-        const usdt = await USDTTest.deployed();
-        const bid = await BiddingTest.deployed();
-
         const amount_ = 2
         const share = await financing.shareType()
 
@@ -145,6 +138,8 @@ contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
         console.log(`publicSaleTotalSold ${publicSaleTotalSold}`)
 
         await tools.printUSDT(usdt, bid.address)
+        await tools.printUSDT(usdt, user)
+
 
         const pub = await financing.publicSale(amount_, { from: user })
         assert.equal(pub.receipt.status, true, "publicSale failed !");
@@ -171,8 +166,6 @@ contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
 
     it("testing checkPublicSale() should assert true", async function () {
 
-        const financing = await Financing.deployed()
-
         const publicSaleTotalSold = await financing.publicSaleTotalSold()
         console.log(`publicSaleTotalSold ${publicSaleTotalSold}`)
 
@@ -194,7 +187,6 @@ contract("FinancingTest-PublicSale-1-remain-fail", (accounts) => {
     })
 
     it("testing redeemPublicSale() should assert true", async function () {
-        const financing = await Financing.deployed()
         const receiptNFT = await financing.receiptNFT()
         const bid = await BiddingTest.deployed();
 
