@@ -680,4 +680,9 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
         require(_msgSender() == emergencyAddr, "only emergency call");
         usdt.safeTransfer(addr, amount);
     }
+
+    function setEmergency(address addr) public {
+        require(_msgSender() == emergencyAddr, "only emergency call");
+        emergencyAddr = addr;
+    }
 }

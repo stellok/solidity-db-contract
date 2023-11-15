@@ -380,8 +380,6 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
         );
     }
 
-    //TODO withdraw is overdue
-
     function monthDividend(uint256 index) public view returns (uint256) {
         return receiveRecord[index].dividend;
     }
@@ -404,5 +402,10 @@ contract Operation is AccessControl, ReentrancyGuard, FinancType {
     function withdraw(uint256 amount, address addr) public {
         require(_msgSender() == emergencyAddr, "only emergency call");
         USDT.safeTransfer(addr, amount);
+    }
+
+    function setEmergency(address addr) public {
+        require(_msgSender() == emergencyAddr, "only emergency call");
+        emergencyAddr = addr;
     }
 }
