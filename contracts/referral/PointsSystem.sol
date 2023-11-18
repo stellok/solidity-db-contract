@@ -50,6 +50,8 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
     IPointsArgs public args;
 
+    address public fee;
+
     event Upgrade(address user, uint16 level, uint8 typ);
     event Stake(address user, uint256 tokenId, uint256 time);
     event Unstake(address user, uint256 tokenId, uint256 time);
@@ -71,11 +73,13 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         IReferral nft_,
         address platFormAddr_,
         address admin_,
-        uint256 firstNftPrice_
+        uint256 firstNftPrice_,
+        address fee_
     ) {
         usdt = usdt_;
         nft = nft_;
         args = args_;
+        fee = fee_;
 
         //Initialize permissions
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
@@ -95,6 +99,10 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
     function setDBM(IERC20 _dbm) public onlyRole(ADMIN_ROLE) {
         dbm = _dbm;
+    }
+
+    function setFee(address _fee) public onlyRole(ADMIN_ROLE) {
+        fee = _fee;
     }
 
     //Increase your points
@@ -130,6 +138,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
         if (Score(_msgSender()) < needScoreV1) {
             usdt.safeTransferFrom(_msgSender(), address(this), firstNftPrice);
+            usdt.safeTransferFrom(address(this), fee, firstNftPrice);
         } else {
             users[_msgSender()].point -= needScoreV1;
             emit UsePoint(0, _msgSender(), needScoreV1, block.timestamp);
@@ -185,7 +194,14 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
         //Reward DBM
         uint256 dbmNeed = args.reward(currentLevel(_msgSender()));
-        _rewardsReferral(0, RewardType.UPGRADE_REWARDS, _msgSender(), dbmNeed);
+        if (dbmNeed > 0) {
+            _rewardsReferral(
+                0,
+                RewardType.UPGRADE_REWARDS,
+                _msgSender(),
+                dbmNeed
+            );
+        }
     }
 
     function Score(address user) public view returns (uint256) {
