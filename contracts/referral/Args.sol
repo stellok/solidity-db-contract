@@ -19,31 +19,32 @@ import "../common/IPointsArgs.sol";
 */
 
 contract Args is IPointsArgs {
-    uint8 decimals = 18;
+    uint256 decimals = 10 ** 18;
 
+    //1000000000000000000
     function reward(uint16 _level) public view returns (uint256) {
         if (_level >= 1 && _level <= 9) {
-            return 10 ** decimals;
+            return 10 * decimals;
         } else if (_level >= 10 && _level <= 19) {
-            return 20 ** decimals;
+            return 20 * decimals;
         } else if (_level >= 20 && _level <= 29) {
-            return 40 ** decimals;
+            return 40 * decimals;
         } else if (_level >= 30 && _level <= 39) {
-            return 80 ** decimals;
+            return 80 * decimals;
         } else if (_level >= 40 && _level <= 49) {
-            return 160 ** decimals;
+            return 160 * decimals;
         } else if (_level >= 50 && _level <= 59) {
-            return 320 ** decimals;
+            return 320 * decimals;
         } else if (_level >= 60 && _level <= 69) {
-            return 640 ** decimals;
+            return 640 * decimals;
         } else if (_level >= 70 && _level <= 79) {
-            return 1280 ** decimals;
+            return 1280 * decimals;
         } else if (_level >= 80 && _level <= 89) {
-            return 2560 ** decimals;
+            return 2560 * decimals;
         } else if (_level >= 90 && _level <= 99) {
-            return 5120 ** decimals;
+            return 5120 * decimals;
         } else {
-            return 10240 ** decimals;
+            return 10240 * decimals;
         }
     }
 

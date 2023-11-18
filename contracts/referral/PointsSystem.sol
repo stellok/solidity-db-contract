@@ -26,7 +26,14 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         //Whether the user mint NFT or not
         bool mint;
         //Direct or indirect rewards, reward DBM
-        uint256 pendingReward;
+        mapping(RewardType => uint256) pendingRewards;
+    }
+
+    //
+    enum RewardType {
+        UPGRADE_REWARDS,
+        RECOMMEND_REWARDS,
+        SELF_REWARDS
     }
 
     mapping(address => User) users;
@@ -49,10 +56,10 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     event Increase(uint256 id, uint8 typ, address user, uint256 score);
     event Mint(address user, uint256 tokenId, uint256 time);
     event UsePoint(uint8 typ, address user, uint256 score, uint256 time);
-    event Reward(uint8 typ, address user, uint256 amount, uint256 time);
+    event Reward(RewardType typ, address user, uint256 amount, uint256 time);
     event PendingReward(
         uint256 id,
-        uint8 typ,
+        RewardType typ,
         address user,
         uint256 amount,
         uint256 time
@@ -178,7 +185,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
         //Reward DBM
         uint256 dbmNeed = args.reward(currentLevel(_msgSender()));
-        _rewardsReferral(0, 1, _msgSender(), dbmNeed);
+        _rewardsReferral(0, RewardType.UPGRADE_REWARDS, _msgSender(), dbmNeed);
     }
 
     function Score(address user) public view returns (uint256) {
@@ -191,8 +198,11 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         return nft.getLevel(tokenId);
     }
 
-    function pendingReward(address user) public view returns (uint256) {
-        return users[user].pendingReward;
+    function pendingReward(
+        address user,
+        RewardType typ
+    ) public view returns (uint256) {
+        return users[user].pendingRewards[typ];
     }
 
     function setLevel(address user, uint16 level) internal {
@@ -208,7 +218,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     //Referral RewardsReferral
     function rewardsReferral(
         uint256 id,
-        uint8 typ,
+        RewardType typ,
         address user,
         uint256 score
     ) public onlyRole(PLATFORM_ROLE) {
@@ -217,19 +227,19 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
     function _rewardsReferral(
         uint256 id,
-        uint8 typ,
+        RewardType typ,
         address user,
         uint256 score
     ) internal {
         if (checkStaked(user) > 0) {
-            users[user].pendingReward += score;
+            users[user].pendingRewards[typ] += score;
             emit PendingReward(id, typ, user, score, block.timestamp);
         }
     }
 
     function rewardsReferralBatch(
         uint256[] memory ids,
-        uint8[] memory typ,
+        RewardType[] memory typ,
         address[] memory user,
         uint256[] memory score
     ) public onlyRole(PLATFORM_ROLE) {
@@ -243,12 +253,12 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     //Users receive DBM rewards
-    function withdrawReward() public {
-        require(users[_msgSender()].pendingReward > 0, "There are no rewards");
+    function withdrawReward(RewardType typ) public {
+        uint256 amout = pendingReward(_msgSender(), typ);
+        require(amout > 0, "There are no rewards");
         require(dbm != IERC20(address(0)), "dbm token has not started yet");
-        uint256 amout = users[_msgSender()].pendingReward;
         dbm.safeTransfer(_msgSender(), amout);
-        users[_msgSender()].pendingReward = 0;
-        emit Reward(0, _msgSender(), amout, block.timestamp);
+        users[_msgSender()].pendingRewards[typ] = 0;
+        emit Reward(typ, _msgSender(), amout, block.timestamp);
     }
 }
