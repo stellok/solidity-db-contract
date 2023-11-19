@@ -313,7 +313,7 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         require(subscribeTime > 0, "UnStart subscribe"); //Not turned on
         require(stock <= subscribeMax, "subscribe limit");
         require(
-            user[_msgSender()].amount <= userMax,
+            (user[_msgSender()].amount + stock) <= userMax,
             "user total subscribe limit"
         );
 
