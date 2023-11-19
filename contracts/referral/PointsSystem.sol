@@ -138,7 +138,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
 
         if (Score(_msgSender()) < needScoreV1) {
             usdt.safeTransferFrom(_msgSender(), address(this), firstNftPrice);
-            usdt.safeTransferFrom(address(this), fee, firstNftPrice);
+            usdt.safeTransfer(fee, firstNftPrice);
         } else {
             users[_msgSender()].point -= needScoreV1;
             emit UsePoint(0, _msgSender(), needScoreV1, block.timestamp);
@@ -147,6 +147,20 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
         uint256 tokenId = nft.mint(_msgSender());
         users[_msgSender()].mint = true;
         nft.setLevel(tokenId, 1);
+        //Reward DBM
+        uint256 dbmNeed = args.reward(1);
+        if (dbmNeed > 0) {
+            users[_msgSender()].pendingRewards[
+                RewardType.UPGRADE_REWARDS
+            ] += dbmNeed;
+            emit PendingReward(
+                0,
+                RewardType.UPGRADE_REWARDS,
+                _msgSender(),
+                dbmNeed,
+                block.timestamp
+            );
+        }
         emit Mint(_msgSender(), tokenId, block.timestamp);
     }
 
@@ -183,7 +197,7 @@ contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
     function upgrade() public {
         //Current user level
         uint256 need = args.score(currentLevel(_msgSender()) + 1);
-        require(Score(_msgSender()) > need, "Not enough points");
+        require(Score(_msgSender()) >= need, "Not enough points");
 
         //Spend points
         users[_msgSender()].point -= need;

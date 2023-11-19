@@ -23,25 +23,25 @@ contract Args is IPointsArgs {
 
     //1000000000000000000
     function reward(uint16 _level) public view returns (uint256) {
-        if (_level == 9) {
+        if (_level == 1) {
             return 10 * decimals;
-        } else if (_level == 19) {
+        } else if (_level == 10) {
             return 20 * decimals;
-        } else if (_level == 29) {
+        } else if (_level == 20) {
             return 40 * decimals;
-        } else if (_level == 39) {
+        } else if (_level == 30) {
             return 80 * decimals;
-        } else if (_level == 49) {
+        } else if (_level == 40) {
             return 160 * decimals;
-        } else if (_level == 59) {
+        } else if (_level == 50) {
             return 320 * decimals;
-        } else if (_level == 69) {
+        } else if (_level == 60) {
             return 640 * decimals;
-        } else if (_level == 79) {
+        } else if (_level == 70) {
             return 1280 * decimals;
-        } else if (_level == 89) {
+        } else if (_level == 80) {
             return 2560 * decimals;
-        } else if (_level == 99) {
+        } else if (_level == 90) {
             return 5120 * decimals;
         } else if (_level == 110) {
             return 10240 * decimals;
