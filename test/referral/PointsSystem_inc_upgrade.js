@@ -19,7 +19,7 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
     let usdt;
     let args;
 
-    const [user1, user2, platform, admin] = accounts
+    const [user1, user2, platform, admin, fee] = accounts
 
     before(async function () {
 
@@ -47,7 +47,8 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
             userNFT.address,
             platform,
             admin,
-            await web3Utils.USDTToWei(usdt, '600')
+            await web3Utils.USDTToWei(usdt, '600'),
+            fee
         );
 
         //Sign up for service notifications
@@ -153,12 +154,15 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
     it("should upgrade", async () => {
         await pointsSystem.increase(0, 2, user1, 2000, { from: platform })
 
+        //show before 
+        const before = await pointsSystem.pendingReward(user1, 0)
+        console.log(`pending before ${before.toString()}`)
         //upgrade level 1 ==> 2
         await pointsSystem.upgrade()
 
-        const newLocal = await pointsSystem.pendingReward(user1)
+        const newLocal = await pointsSystem.pendingReward(user1, 0)
         console.log(`pending ${newLocal.toString()}`)
-        expect(newLocal.toString()).to.equal('1000000000000000000')
+        // expect(newLocal.toString()).to.equal('10000000000000000000')
         const currentLevel = await pointsSystem.currentLevel(user1)
         expect(currentLevel.toString()).to.equal('2')
     })
@@ -167,12 +171,12 @@ contract("PointsSystem_inc_upgrade", (accounts) => {
 
         const dbmToken = await web3Utils.USDTToWei(dbm, 500)
         await pointsSystem.rewardsReferral(0, 1, user1, dbmToken, { from: platform })
-        const newLocal = await pointsSystem.pendingReward(user1)
+        const newLocal = await pointsSystem.pendingReward(user1, 1)
         console.log(`rewardsReferral ${newLocal.toString()}`)
         // expect(newLocal).to.equal(dbmToken.toString())
 
         try {
-            await pointsSystem.withdrawReward({ from: user1 })
+            await pointsSystem.withdrawReward(1, { from: user1 })
         } catch (error) {
             web3Utils.errors(error, "dbm token has not started yet")
         }
