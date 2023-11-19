@@ -17,7 +17,7 @@ module.exports = async function (deployer, network, accounts) {
     var usdt = process.env.usdt
     var dbm = process.env.dbm
     var userNft = process.env.userNft
-    var pointsSystem = process.env.PointsSystem
+    var pointsSystem = process.env.pointsSystem
     var args = process.env.args
 
     if (usdt === undefined) {
@@ -33,13 +33,12 @@ module.exports = async function (deployer, network, accounts) {
         console.log(`userNft address ${userNft}`)
     }
 
-    // if (dbm === undefined) {
-    //     const cusdt = await USDT.at(usdt)
-    //     await deployer.deploy(DBM, await tools.USDTToWei(cusdt, '10000000'), accounts[0], { from: dep })
-    //     const _dbm = await DBM.deployed()
-    //     dbm = _dbm.address
-    //     console.log(`dbm address ${dbm}`)
-    // }
+    if (dbm === undefined) {
+        await deployer.deploy(DBM, '1000000000000000000000000000', accounts[0], { from: dep })
+        const _dbm = await DBM.deployed()
+        dbm = _dbm.address
+        console.log(`dbm address ${dbm}`)
+    }
 
     if (args === undefined) {
         await deployer.deploy(Args)
@@ -50,12 +49,13 @@ module.exports = async function (deployer, network, accounts) {
 
     if (pointsSystem === undefined) {
         const usdtCtr = await USDT.at(usdt)
-        // IERC20 dbm_,
         // IERC20 usdt_,
         // IPointsArgs args_,
         // IReferral nft_,
         // address platFormAddr_,
-        // address admin_
+        // address admin_,
+        // uint256 firstNftPrice_,
+        // address fee_
         console.log(`usdt == ${usdt} ${usdt === ''}`)
         await deployer.deploy(PointsSystem,
             usdt,
@@ -64,6 +64,7 @@ module.exports = async function (deployer, network, accounts) {
             '0x25CFF0Fcfd8F04116249298F43d1F90b946A76C0',
             '0x8d0be07353e6A9902842a28a3DCAcEFBD09C318c',
             await web3Utils.USDTToWei(usdtCtr, '600'),
+            '0x8d0be07353e6A9902842a28a3DCAcEFBD09C318c',
             { from: dep })
         const ps = await PointsSystem.deployed()
         console.log(`PointsSystem address : ${ps.address}`)
