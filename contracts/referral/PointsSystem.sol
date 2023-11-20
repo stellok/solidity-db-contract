@@ -14,7 +14,7 @@ import "../common/IPointsArgs.sol";
 //Integral recommendation system
 //Manual upgrade
 //Staking system
-contract PointsSystem is AccessControl, ReentrancyGuard, Ownable, ERC721Holder {
+contract PointsSystem is AccessControl, ReentrancyGuard, ERC721Holder {
     bytes32 public constant PLATFORM_ROLE = keccak256("PLATFORM_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     struct User {

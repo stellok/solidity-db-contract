@@ -16,7 +16,6 @@ contract UserNft is
     ERC721,
     ERC721URIStorage,
     Pausable,
-    Ownable,
     INft,
     IReferral,
     AccessControl
@@ -28,16 +27,18 @@ contract UserNft is
     //tokenId <==> level
     mapping(uint256 => uint16) levels;
 
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE"); //
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE"); //
     bytes32 public constant REFERRAL_ROLE = keccak256("REFERRAL_ROLE");
 
     constructor(
         string memory name_,
-        string memory symbol_
+        string memory symbol_,
+        address admin_
     ) ERC721(name_, symbol_) {
         //Make sure the tokenID > 0
         _tokenIdCounter.increment();
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, admin_);
+        _grantRole(ADMIN_ROLE, admin_);
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -50,15 +51,15 @@ contract UserNft is
 
     string public baseURI;
 
-    function pause() public onlyOwner {
+    function pause() public onlyRole(ADMIN_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    function unpause() public onlyRole(ADMIN_ROLE) {
         _unpause();
     }
 
-    function setBaseURI(string memory baseURI_) external onlyOwner {
+    function setBaseURI(string memory baseURI_) external onlyRole(ADMIN_ROLE) {
         baseURI = baseURI_;
     }
 
@@ -82,7 +83,7 @@ contract UserNft is
         super._afterTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function burn(uint256 tokenId) public onlyOwner {
+    function burn(uint256 tokenId) public onlyRole(ADMIN_ROLE) {
         _burn(tokenId);
     }
 
