@@ -23,8 +23,6 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     address public dividends;
 
-    uint256 public maxNftAMOUNT = 10;
-
     //Power pledge time
     bool public electrStakeLock;
     bool public isClaimRemainBuild;
@@ -339,10 +337,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
 
     function publicSale(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.publicSale, "not publicSale status");
-        require(
-            amount_ <= maxNftAMOUNT && amount_ > 0,
-            "amount Limit Exceeded"
-        ); //Limit exceeded
+        require(amount_ <= bidding.userMaxLimit(), "amount Limit Exceeded"); //Limit exceeded
         //Determine the status
         require(
             shareType.financingShare > publicSaleTotalSold,
@@ -409,7 +404,10 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
             "not publicSaleFailed status"
         );
 
-        require(tokenIdList.length <= maxNftAMOUNT, "tokenIdList lenght >= 10");
+        require(
+            tokenIdList.length <= bidding.userMaxLimit(),
+            "tokenIdList lenght >= 10"
+        );
         for (uint i = 0; i < tokenIdList.length; i++) {
             require(
                 receiptNFT.ownerOf(tokenIdList[i]) == _msgSender(),
@@ -565,10 +563,7 @@ contract Financing is AccessControl, Pausable, ReentrancyGuard, FinancType {
     function remainBargain(uint256 amount_) public nonReentrant {
         require(schedule == ActionChoices.Bargain, "not PAID status");
         require(issuedTotalShare < shareType.financingShare, "Sold out");
-        require(
-            amount_ <= maxNftAMOUNT && amount_ > 0,
-            "amount Limit Exceeded"
-        );
+        require(amount_ <= bidding.userMaxLimit(), "amount Limit Exceeded");
         //Cannot be less than zero
         require(
             bargainTime + limitTimeType.bargainLimitTime > block.timestamp,

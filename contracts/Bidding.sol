@@ -179,6 +179,10 @@ contract Bidding is AccessControl, Pausable, ReentrancyGuard {
         userMax = userMax_;
     }
 
+    function userMaxLimit() public view returns (uint256) {
+        return userMax;
+    }
+
     //Pay the service fee
     function payServiceFee() public nonReentrant {
         require(_msgSender() == founderAddr, "user does not have permission"); //Founder PayServiceFee

@@ -6,4 +6,6 @@ interface IBidding {
     function viewSubscribe(address) external view returns (uint256);
 
     function transferAmount(uint256 amount) external;
+
+    function userMaxLimit() external view returns (uint256);
 }

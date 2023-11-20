@@ -55,7 +55,6 @@ contract NFT721Impl is
     }
 
     function mint(address account, uint256 amount) public onlyOwner {
-        require(amount <= 100, "mint amount >=100");
         for (uint i = 0; i < amount; i++) {
             safeMint(account, "");
         }
